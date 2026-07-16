@@ -1,484 +1,312 @@
 # 03_ROADMAP.md
 
-# Project Roadmap
+# Development Roadmap
 
-This document defines the development roadmap for the project.
+This document defines the long-term development roadmap for the project.
 
-The roadmap is the single source of truth for development progress.
+The roadmap is organized around architectural milestones rather than individual features.
 
-Only features within the **current active phase** should be implemented.
+Each phase should produce a stable foundation for the next phase.
 
-Future phases must not be implemented unless explicitly requested.
-
----
-
-# Current Development Phase
-
-## Active Phase
-
-**Phase 1 — Project Foundation**
-
-Status
-
-🟢 Active
-
-Current Objective
-
-Build a stable project foundation before implementing any user-facing functionality.
+Implementation should always follow the roadmap unless explicitly overridden.
 
 ---
 
-# Development Workflow
+# Roadmap Principles
 
-Development follows a sequential approach.
+Development should prioritize:
 
-```text
+* Strong foundations
+* Incremental delivery
+* Stable architecture
+* Small iterations
+* Continuous validation
+
+Avoid implementing future features before their prerequisites exist.
+
+---
+
+# Phase Overview
+
+```text id="w6u1ja"
 Phase 1
+
+Project Foundation
 
 ↓
 
 Phase 2
 
+Platform Layer
+
 ↓
 
 Phase 3
+
+Media Pipeline
 
 ↓
 
 Phase 4
 
+User Interface
+
 ↓
 
 Phase 5
 
+Application Features
+
 ↓
 
 Phase 6
+
+Stabilization & Release
 ```
 
-A phase should be completed before moving to the next one.
-
-Avoid skipping phases.
+Each phase depends on the previous one.
 
 ---
 
 # Phase 1 — Project Foundation
 
-## Goal
+Objective
 
-Establish the project foundation.
+Create a maintainable project foundation.
 
-Create the application structure, configure development tools, verify external dependencies, and prepare the project architecture.
+Deliverables
+
+* Repository structure
+* Wails v3 setup
+* React + TypeScript setup
+* Go backend setup
+* Build configuration
+* Application startup
+* Dependency verification
+* Logging
+* Settings management
+* Event infrastructure
+
+Success Criteria
+
+* Application launches successfully.
+* Frontend communicates with backend.
+* Dependencies are detected correctly.
+* Development environment is stable.
 
 ---
 
-## Tasks
+# Phase 2 — Platform Layer
 
-Project
+Objective
 
-* Initialize Wails v3
-* Configure React
-* Configure TypeScript
-* Configure Tailwind CSS
-* Configure Go project
-* Setup Git repository
+Create a platform-independent abstraction for supported video providers.
 
-Application
+Deliverables
 
-* Application bootstrap
-* Startup sequence
-* Shutdown sequence
+* Platform interface
+* Platform resolver
+* URL detection
+* URL validation
+* Video metadata model
+* Stream information model
+* Adapter registration
+* YouTube adapter
+* Kick adapter
 
-Dependencies
+Success Criteria
 
-* Detect FFmpeg
-* Detect FFprobe
-* Detect yt-dlp
-* Detect AMD AMF support
+* Supported platforms are detected automatically.
+* Metadata can be retrieved consistently.
+* Platform implementations remain isolated.
+* Core services do not depend on platform-specific logic.
 
-Configuration
+---
 
-* Create settings system
-* Load configuration
-* Save configuration
-* Default configuration
+# Phase 3 — Media Pipeline
 
-Storage
+Objective
 
-* Create storage directories
-* Verify write permissions
+Build the complete local media processing pipeline.
 
-UI
+Deliverables
+
+* Download workflow
+* Local media storage
+* FFprobe wrapper
+* FFmpeg wrapper
+* GPU detection
+* Stream Copy export
+* GPU encoding
+* CPU fallback
+* Progress reporting
+* Export pipeline
+
+Success Criteria
+
+* Videos download successfully.
+* Clips export correctly.
+* GPU acceleration works when available.
+* CPU fallback behaves reliably.
+
+---
+
+# Phase 4 — User Interface
+
+Objective
+
+Create a complete desktop experience.
+
+Deliverables
 
 * Home page
+* Metadata display
+* Video preview
+* Timeline editor
+* Export panel
+* Progress display
 * Settings page
+* History page
+* Theme support
 
-Logging
+Success Criteria
 
-* Logger initialization
-* Startup logs
-
----
-
-## Deliverables
-
-The application should:
-
-* Launch successfully.
-* Verify required dependencies.
-* Detect GPU support.
-* Save settings.
-* Load settings.
-* Display a basic UI.
+* Users can complete the primary workflow.
+* Timeline interaction is responsive.
+* Progress updates are reliable.
+* UI remains responsive during long operations.
 
 ---
 
-## Exit Criteria
+# Phase 5 — Application Features
 
-Phase 1 is complete when:
+Objective
 
-* Project builds successfully.
-* Application launches without errors.
-* Required binaries are detected.
-* Settings persist correctly.
-* Logging works.
-* Folder structure is complete.
+Improve usability and workflow efficiency.
 
----
+Deliverables
 
-# Phase 2 — Video Discovery
+* Export presets
+* Recent projects
+* Download history
+* Export history
+* Keyboard shortcuts
+* Output management
+* Error recovery
+* Improved validation
 
-## Goal
+Success Criteria
 
-Allow users to discover and download videos.
-
----
-
-## Tasks
-
-Metadata
-
-* Parse URLs
-* Validate supported platforms
-* Retrieve metadata
-* Retrieve thumbnails
-* Retrieve duration
-* Retrieve available formats
-
-Download
-
-* Select quality
-* Download video
-* Download audio
-* Merge streams when necessary
-
-UI
-
-* Metadata preview
-* Thumbnail preview
-* Resolution selector
-* Download progress
+* Daily workflows become faster.
+* Configuration is easier to manage.
+* Frequently used actions require fewer steps.
 
 ---
 
-## Deliverables
+# Phase 6 — Stabilization & Release
 
-Users can:
+Objective
 
-* Load supported URLs.
-* View metadata.
-* Download videos locally.
+Prepare the application for long-term use.
 
----
+Deliverables
 
-## Exit Criteria
+* Performance optimization
+* Memory optimization
+* Error handling improvements
+* Test coverage improvements
+* Documentation review
+* Packaging
+* Installer
+* Release build
 
-* Metadata retrieval is reliable.
-* Downloads complete successfully.
-* Progress updates function correctly.
-* Cancellation works.
+Success Criteria
 
----
-
-# Phase 3 — Clip Editor
-
-## Goal
-
-Provide an intuitive interface for selecting clip ranges.
-
----
-
-## Tasks
-
-Preview
-
-* Video player
-* Frame preview
-
-Timeline
-
-* Interactive timeline
-* Start marker
-* End marker
-* Manual timestamp editing
-
-Output
-
-* Filename
-* Output directory
-* Export options
-
-UI
-
-* Responsive layout
-* Timeline controls
+* Stable long-running operation.
+* Reliable export performance.
+* Consistent user experience.
+* Ready for production use.
 
 ---
 
-## Deliverables
+# Feature Priority
 
-Users can visually select clip ranges before exporting.
+Priority order:
 
----
+```text id="4qnn7t"
+Core Architecture
 
-## Exit Criteria
+↓
 
-* Timeline works correctly.
-* Timestamp selection is accurate.
-* Preview playback is stable.
-* Export options are functional.
+Platform Support
 
----
+↓
 
-# Phase 4 — Video Processing
+Media Processing
 
-## Goal
+↓
 
-Generate clips efficiently.
+User Experience
 
----
+↓
 
-## Tasks
+Convenience Features
+```
 
-Processing
-
-* Stream Copy
-* GPU Encoding
-* CPU Fallback
-
-Progress
-
-* Progress updates
-* Cancellation
-* Completion events
-
-Validation
-
-* Output validation
-* Error reporting
-
-Optimization
-
-* Minimize processing time
-* Preserve video quality
-
----
-
-## Deliverables
-
-Users can export clips successfully.
-
-The application automatically selects the optimal processing strategy.
-
----
-
-## Exit Criteria
-
-* Stream Copy works.
-* GPU encoding works.
-* CPU fallback works.
-* Progress reporting works.
-* Output validation succeeds.
-
----
-
-# Phase 5 — User Experience
-
-## Goal
-
-Improve usability and workflow.
-
----
-
-## Tasks
-
-History
-
-* Recent downloads
-* Recent exports
-
-Settings
-
-* Theme
-* Preferences
-* Remember user choices
-
-Convenience
-
-* Open output folder
-* Notifications
-* Better error messages
-
-Logging
-
-* Log viewer
-
-UI
-
-* UX improvements
-* Accessibility improvements
-
----
-
-## Deliverables
-
-The application provides a polished desktop experience.
-
----
-
-## Exit Criteria
-
-* Settings are remembered.
-* History functions correctly.
-* Notifications work.
-* Error messages are user-friendly.
-
----
-
-# Phase 6 — Advanced Features
-
-## Goal
-
-Implement optional power-user features.
-
-These features are intentionally postponed until the core application is stable.
-
----
-
-## Tasks
-
-Video
-
-* Playlist download
-* Livestream clipping
-* Batch clipping
-
-Export
-
-* Presets
-* Watermark
-* Subtitle burn-in
-* Thumbnail generator
-
-Encoding
-
-* AV1 support
-* Multi-export
-
-Application
-
-* Automatic update checker
-
----
-
-## Deliverables
-
-Advanced functionality is available without compromising application simplicity.
-
----
-
-## Exit Criteria
-
-All advanced features operate independently and do not negatively affect the core workflow.
-
----
-
-# Deferred Features
-
-The following features are intentionally postponed.
-
-* Cloud synchronization
-* Remote storage
-* Team collaboration
-* AI clip detection
-* Automatic highlight generation
-* OCR
-* Speech recognition
-
-These features should not be considered during normal development.
+Never prioritize convenience features over core functionality.
 
 ---
 
 # Out of Scope
 
-The following are permanently outside the scope of this project.
+The following are intentionally excluded from the current roadmap:
 
-* Cloud deployment
-* Authentication
+* Cloud synchronization
 * User accounts
-* REST API
-* GraphQL
-* Database server
-* PostgreSQL
-* Redis
-* RabbitMQ
-* Kafka
-* Docker
-* Kubernetes
-* Microservices
-* Distributed processing
+* Online editing
+* Collaborative features
+* Video uploading
+* Plugin system
+* Mobile application
+
+These may be considered only after the core application is mature.
 
 ---
 
-# Definition of Done
+# Future Expansion
 
-A task is considered complete when:
+Possible future phases:
 
-* The implementation works.
-* Error handling is complete.
-* Logging is implemented.
-* The code follows project architecture.
-* The code follows project rules.
-* The feature has been manually tested.
-* No unnecessary dependencies were introduced.
+* Additional platform adapters
+* AV1 encoding
+* Hardware decoding
+* Batch processing
+* Advanced timeline editing
+* Waveform visualization
+* Subtitle editing
 
----
-
-# Roadmap Rules
-
-Always follow these rules:
-
-* Only work on the active phase.
-* Complete the current phase before moving forward.
-* Do not implement future features.
-* Do not skip milestones.
-* Keep implementations incremental.
-* Prefer small, reviewable changes.
+Future work should preserve the existing architecture.
 
 ---
 
-# Progress Tracking
+# AI Guidelines
 
-Progress should be tracked in:
+When planning or implementing work:
 
-* 05_SPRINT.md
+* Complete one phase before starting the next.
+* Avoid skipping architectural milestones.
+* Respect dependency order.
+* Build reusable foundations.
+* Do not implement speculative features.
 
-Architecture decisions belong in:
+If a requested feature depends on unfinished work, implement the prerequisite first.
 
-* 04_DECISIONS.md
+---
 
-Implementation rules belong in:
+# Roadmap Philosophy
 
-* 01_RULES.md
+The roadmap prioritizes architecture over features.
 
-This document should only describe **what** will be built and **when** it should be built.
+A stable foundation enables faster feature development and easier long-term maintenance.
+
+Every completed phase should leave the project in a usable, testable, and extensible state.

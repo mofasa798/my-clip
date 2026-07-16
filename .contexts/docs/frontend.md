@@ -2,235 +2,35 @@
 
 # Frontend Engineering Guide
 
-This document defines the frontend implementation guidelines for the project.
+This document defines the frontend architecture, responsibilities, and engineering standards.
 
-The frontend is responsible only for presentation and user interaction.
+The frontend is responsible for presenting the user interface and communicating with the backend.
 
-Business logic belongs to the Go backend.
+It should remain lightweight, predictable, and free of business logic.
 
 ---
 
-# Responsibilities
+# Frontend Responsibilities
 
 The frontend owns:
 
-* User Interface
-* User Interaction
+* User interaction
 * Navigation
-* Forms
-* Video Preview
-* Timeline
-* Progress Display
-* Notifications
-* Theme
+* State presentation
+* Timeline interaction
+* Video preview
+* Form validation
+* Progress visualization
+* Theme management
 
-The frontend should remain lightweight.
-
----
-
-# Technology Stack
-
-Framework
-
-* React
-
-Language
-
-* TypeScript
-
-Bundler
-
-* Vite
-
-Styling
-
-* Tailwind CSS
-
-Desktop Bridge
-
-* Wails v3
+The frontend must never implement business logic.
 
 ---
 
-# Frontend Directory
+# Frontend Architecture
 
-```text id="pjx3kn"
-frontend/src/
-
-components/
-hooks/
-layouts/
-pages/
-services/
-stores/
-types/
-utils/
-assets/
-```
-
-Each directory has one responsibility.
-
----
-
-# Directory Responsibilities
-
-## components
-
-Reusable UI components.
-
-Examples
-
-* Button
-* Input
-* Timeline
-* ProgressBar
-* Modal
-* VideoPreview
-
-Components should remain small.
-
----
-
-## pages
-
-Application screens.
-
-Examples
-
-* Home
-* Download
-* Editor
-* Settings
-* History
-
-Pages compose components.
-
-Pages should not contain business logic.
-
----
-
-## layouts
-
-Shared page layouts.
-
-Examples
-
-* MainLayout
-* SettingsLayout
-
-Layouts organize pages.
-
----
-
-## hooks
-
-Reusable React hooks.
-
-Examples
-
-* useSettings
-* useDownload
-* useExport
-* useProgress
-
-Hooks encapsulate UI behavior.
-
----
-
-## services
-
-Frontend communication layer.
-
-Responsibilities
-
-* Call Wails bindings
-* Transform responses
-* Hide implementation details
-
-Business logic does not belong here.
-
----
-
-## stores
-
-Global UI state only.
-
-Examples
-
-* Theme
-* Sidebar state
-* Current page
-
-Avoid storing business state.
-
----
-
-## types
-
-Shared TypeScript types.
-
-Examples
-
-* VideoMetadata
-* ExportOptions
-* Settings
-
-Keep types centralized.
-
----
-
-## utils
-
-Small helper functions.
-
-No business logic.
-
----
-
-## assets
-
-Static assets.
-
-Examples
-
-* Icons
-* Images
-* Fonts
-
----
-
-# Component Design
-
-Each component should have one responsibility.
-
-Good
-
-```text id="od7ovx"
-Timeline
-
-VideoPreview
-
-ProgressBar
-
-SettingsForm
-
-DownloadCard
-```
-
-Avoid large components with multiple unrelated responsibilities.
-
----
-
-# Component Hierarchy
-
-Preferred hierarchy
-
-```text id="gpnexr"
-Page
-
-↓
-
-Layout
+```text
+React UI
 
 ↓
 
@@ -238,201 +38,81 @@ Components
 
 ↓
 
-Small UI Elements
-```
-
-Avoid deeply nested component trees.
-
----
-
-# Page Responsibilities
-
-Pages should:
-
-* Arrange components
-* Manage local UI state
-* Handle navigation
-
-Pages should NOT:
-
-* Execute FFmpeg
-* Execute yt-dlp
-* Perform business logic
-
----
-
-# State Management
-
-Keep state as local as possible.
-
-Preferred order
-
-```text id="98rymg"
-Component State
+Hooks
 
 ↓
 
-Custom Hooks
+Services
 
 ↓
 
-Global Store
-```
-
-Avoid global state unless multiple pages require it.
-
----
-
-# Wails Communication
-
-All backend communication should be centralized.
-
-Preferred flow
-
-```text id="g3vfbz"
-React Component
-
-↓
-
-Frontend Service
-
-↓
-
-Wails Binding
+Wails Bindings
 
 ↓
 
 Go Backend
 ```
 
-Never call backend bindings directly from multiple components.
+Communication always flows downward.
 
 ---
 
-# Event Handling
+# Core Principles
 
-Progress updates should use Wails Events.
+The frontend should be:
 
-Example
+* Thin
+* Reactive
+* Component-based
+* Accessible
+* Easy to maintain
 
-```text id="bbyjiv"
-Backend
+Business rules belong in the backend.
+
+---
+
+# Application Workflow
+
+The UI follows a simple workflow.
+
+```text
+Paste Video URL
 
 ↓
 
-Emit Event
+Load Video Metadata
 
 ↓
 
-Frontend Service
+Preview Video
 
 ↓
 
-React State
+Select Clip Range
 
 ↓
 
-UI Update
+Configure Export
+
+↓
+
+Export Clip
+
+↓
+
+View History
 ```
 
----
-
-# Forms
-
-Forms should:
-
-* Validate user input
-* Display errors
-* Disable actions while processing
-
-Complex validation belongs to the backend.
+The workflow is identical for every supported video source.
 
 ---
 
-# Video Preview
+# Page Structure
 
-The preview component should:
+Recommended pages:
 
-* Display current frame
-* Show playback position
-* Synchronize with the timeline
-
-The preview should not perform video processing.
-
----
-
-# Timeline
-
-Responsibilities
-
-* Select clip range
-* Seek video
-* Display timestamps
-
-Timeline interactions should remain smooth.
-
-Business logic belongs to the backend.
-
----
-
-# Progress Display
-
-Long-running operations should provide:
-
-* Percentage
-* Current operation
-* Estimated progress
-
-The UI should remain responsive.
-
----
-
-# Error Handling
-
-Display user-friendly error messages.
-
-Technical details should remain available in logs.
-
-Example
-
-Good
-
-```text id="5nncc7"
-Failed to export the selected clip.
-```
-
-Avoid
-
-```text id="zw0gt4"
-Error 127
-```
-
----
-
-# Loading States
-
-Every asynchronous action should provide visual feedback.
-
-Examples
-
-* Spinner
-* Progress Bar
-* Disabled Button
-
-Avoid leaving the user without feedback.
-
----
-
-# Navigation
-
-Keep navigation simple.
-
-Expected pages
-
-```text id="jwlqnu"
+```text
 Home
-
-Download
 
 Editor
 
@@ -441,7 +121,306 @@ History
 Settings
 ```
 
-Avoid deeply nested navigation.
+Each page owns one responsibility.
+
+---
+
+# Home Page
+
+Responsibilities:
+
+* Accept video URL
+* Display supported providers
+* Validate input
+* Request metadata
+* Navigate to the editor
+
+The Home page should not detect providers.
+
+Provider detection belongs to the backend.
+
+---
+
+# Editor Page
+
+Responsibilities:
+
+* Display video metadata
+* Preview video
+* Timeline editing
+* Export configuration
+* Progress monitoring
+
+The Editor operates only on generic video metadata.
+
+---
+
+# History Page
+
+Responsibilities:
+
+* Display previous exports
+* Display download history
+* Search
+* Filter
+* Open export directory
+
+History should remain read-only.
+
+---
+
+# Settings Page
+
+Responsibilities:
+
+* Output directory
+* Preferred encoder
+* Theme
+* GPU preferences
+* Application settings
+
+Settings should be loaded from the backend.
+
+---
+
+# Component Organization
+
+Example:
+
+```text
+components/
+
+Button/
+Card/
+Dialog/
+Input/
+ProgressBar/
+
+MetadataCard/
+
+Timeline/
+
+VideoPlayer/
+
+ExportPanel/
+```
+
+Components should remain small and reusable.
+
+---
+
+# Component Rules
+
+Each component should:
+
+* Have one responsibility
+* Receive data through props
+* Avoid hidden side effects
+* Remain reusable
+
+Avoid overly large components.
+
+---
+
+# Hooks
+
+Hooks manage UI behavior.
+
+Examples:
+
+```text
+useExport()
+
+useTimeline()
+
+useVideoPlayer()
+
+useSettings()
+```
+
+Hooks should not contain business logic.
+
+---
+
+# Services
+
+Services communicate with the backend.
+
+Responsibilities:
+
+* Wails bindings
+* Request mapping
+* Response mapping
+* Error propagation
+
+Services should never implement business rules.
+
+---
+
+# State Management
+
+Global state should be minimal.
+
+Examples:
+
+* Theme
+* Active page
+* Current export progress
+* Dialog state
+
+Business state belongs to the backend.
+
+---
+
+# Data Models
+
+The frontend should consume generic models.
+
+Examples:
+
+```text
+VideoMetadata
+
+StreamInfo
+
+ClipRequest
+
+ExportOptions
+
+ExportProgress
+```
+
+The frontend should not distinguish between YouTube, Kick, or future providers.
+
+---
+
+# Event Flow
+
+Backend events:
+
+```text
+download.started
+
+download.progress
+
+download.completed
+
+export.started
+
+export.progress
+
+export.completed
+```
+
+The frontend subscribes to events.
+
+Avoid polling.
+
+---
+
+# Video Preview
+
+The preview is based on local media.
+
+The frontend should never stream directly from an online provider.
+
+Workflow:
+
+```text
+Video URL
+
+↓
+
+Backend Download
+
+↓
+
+Local Media
+
+↓
+
+Video Preview
+```
+
+---
+
+# Timeline
+
+The timeline is a presentation component.
+
+Responsibilities:
+
+* Display duration
+* Select start/end points
+* Display playhead
+* Zoom
+* Seek
+
+Timeline calculations remain simple.
+
+Complex validation belongs to the backend.
+
+---
+
+# Form Validation
+
+Frontend validation should cover:
+
+* Required fields
+* Empty input
+* Basic formatting
+
+Business validation belongs to the backend.
+
+---
+
+# Error Handling
+
+Display user-friendly messages.
+
+Avoid exposing internal implementation details.
+
+Example:
+
+Good:
+
+```text
+Unable to retrieve video metadata.
+```
+
+Avoid:
+
+```text
+yt-dlp exited with code 1
+```
+
+Implementation details should remain hidden.
+
+---
+
+# Performance
+
+Prioritize:
+
+* Fast rendering
+* Minimal re-renders
+* Lazy loading where appropriate
+* Lightweight components
+
+Avoid unnecessary state.
+
+---
+
+# Accessibility
+
+The UI should support:
+
+* Keyboard navigation
+* Focus management
+* Screen reader compatibility
+* Clear visual feedback
+
+Accessibility should be considered from the beginning.
 
 ---
 
@@ -449,150 +428,22 @@ Avoid deeply nested navigation.
 
 Use Tailwind CSS.
 
-Prefer utility classes.
+Design should follow the Design System documentation.
 
-Maintain consistent spacing.
-
-Avoid inline styles unless necessary.
+Avoid inline styles.
 
 ---
 
-# Theme
+# Testing
 
-Support:
+Frontend tests should verify:
 
-* Light
-* Dark
+* Rendering
+* User interaction
+* Component behavior
+* Hook behavior
 
-Theme should be controlled globally.
-
----
-
-# Icons
-
-Use one icon library consistently.
-
-Avoid mixing icon sets.
-
----
-
-# Notifications
-
-Notify users about:
-
-* Download completed
-* Export completed
-* Errors
-* Dependency issues
-
-Avoid excessive notifications.
-
----
-
-# Accessibility
-
-Provide:
-
-* Keyboard navigation
-* Focus states
-* Accessible labels
-
-Maintain reasonable color contrast.
-
----
-
-# Performance
-
-Optimize rendering.
-
-Avoid unnecessary re-renders.
-
-Memoization should only be used when beneficial.
-
----
-
-# TypeScript
-
-Avoid:
-
-* any
-* implicit types
-
-Prefer explicit interfaces.
-
-Keep types close to their domain.
-
----
-
-# Services
-
-Frontend services should:
-
-* Call backend APIs
-* Transform responses
-* Normalize data
-
-Services should NOT:
-
-* Execute business logic
-* Maintain application state
-
----
-
-# Custom Hooks
-
-Hooks should encapsulate reusable UI behavior.
-
-Examples
-
-```text id="ryjlwm"
-useDownload()
-
-useExport()
-
-useTimeline()
-
-useSettings()
-
-useProgress()
-```
-
-Avoid hooks with multiple unrelated responsibilities.
-
----
-
-# File Naming
-
-Use lowercase with underscores.
-
-Examples
-
-```text id="l7sjbr"
-video_preview.tsx
-settings_page.tsx
-download_card.tsx
-progress_bar.tsx
-```
-
----
-
-# Component Naming
-
-Use PascalCase.
-
-Examples
-
-```text id="z2edfd"
-VideoPreview
-
-ProgressBar
-
-DownloadCard
-
-SettingsForm
-```
-
-Component names should describe their purpose.
+Do not test implementation details.
 
 ---
 
@@ -601,22 +452,18 @@ Component names should describe their purpose.
 When generating frontend code:
 
 * Keep components focused.
+* Keep hooks lightweight.
+* Place business logic in the backend.
 * Reuse existing components.
-* Keep pages lightweight.
-* Avoid business logic.
-* Use hooks for reusable behavior.
-* Follow the project structure.
-* Keep UI responsive.
-* Preserve consistent styling.
+* Consume generic backend models.
+* Never assume a specific video provider.
 
 ---
 
 # Frontend Philosophy
 
-The frontend should present information, not own it.
+The frontend presents workflows, not platform implementations.
 
-Business rules belong to the backend.
+Users interact with videos through a consistent interface, regardless of where the media originated.
 
-The frontend exists to provide a clean, responsive, and intuitive desktop experience.
-
-A simple interface with predictable behavior is preferred over unnecessary complexity.
+A well-designed frontend is unaware of provider-specific behavior and focuses entirely on delivering a smooth editing experience.

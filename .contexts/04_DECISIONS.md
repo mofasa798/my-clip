@@ -2,577 +2,479 @@
 
 # Architecture Decision Records (ADR)
 
-This document records important architectural and technical decisions made for this project.
+This document records permanent architectural decisions for the project.
 
-Each accepted decision is considered **final** unless explicitly changed by the project owner.
+These decisions should remain stable throughout development.
 
-AI assistants should follow these decisions without proposing alternative architectures unless requested.
+New decisions may be added over time.
+
+Existing decisions should only change when absolutely necessary.
 
 ---
 
 # ADR-001
 
-## Title
+## Platform-Agnostic Architecture
 
-Desktop Framework
-
-## Decision
-
-Use **Wails v3**.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-* Native Go integration.
-* Small executable size.
-* Low memory usage.
-* Excellent desktop performance.
-* No embedded Chromium runtime.
+The application shall be platform-agnostic.
+
+No core service may depend on a specific video platform.
+
+Platform-specific logic must be isolated within the Platform Layer.
+
+Reason
+
+This allows new platforms to be added without changing business logic.
 
 ---
 
 # ADR-002
 
-## Title
+## Platform Adapter Pattern
 
-Backend Language
-
-## Decision
-
-Use **Go**.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-* Fast compilation.
-* Excellent concurrency.
-* Simple deployment.
-* Native integration with Wails.
-* Strong support for external process management.
+Every supported platform must implement the same adapter interface.
+
+Examples:
+
+* YouTube
+* Kick
+* Future platforms
+
+Reason
+
+A consistent interface simplifies maintenance and future expansion.
 
 ---
 
 # ADR-003
 
-## Title
+## Local-First Processing
 
-Frontend Framework
-
-## Decision
-
-Use **React + TypeScript + Vite**.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-* Mature ecosystem.
-* Excellent Wails support.
-* Fast development.
-* Strong TypeScript integration.
+All media processing shall occur locally.
+
+The application does not rely on cloud services.
+
+Reason
+
+Local processing provides better privacy, lower latency, and predictable performance.
 
 ---
 
 # ADR-004
 
-## Title
+## Stream Copy First
 
-Styling
-
-## Decision
-
-Use **Tailwind CSS**.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-* Rapid UI development.
-* Consistent design system.
-* Minimal custom CSS.
+The preferred export strategy is:
+
+```text id="mk6g0x"
+Stream Copy
+
+↓
+
+GPU Encoding
+
+↓
+
+CPU Encoding
+```
+
+Reason
+
+Stream Copy provides the fastest export while preserving quality.
 
 ---
 
 # ADR-005
 
-## Title
+## GPU as an Optimization
 
-Video Processing Engine
-
-## Decision
-
-Use **FFmpeg**.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-* Industry standard.
-* High performance.
-* Broad codec support.
-* Reliable and well-tested.
+GPU acceleration is optional.
+
+The application must continue functioning when GPU acceleration is unavailable.
+
+Reason
+
+Correctness is more important than performance.
 
 ---
 
 # ADR-006
 
-## Title
+## Layered Architecture
 
-Video Downloader
-
-## Decision
-
-Use **yt-dlp**.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-* Reliable metadata extraction.
-* Supports YouTube and Kick.
-* Mature project.
-* Actively maintained.
+The application follows a layered architecture.
+
+```text id="jokx4j"
+User Interface
+
+↓
+
+Application Layer
+
+↓
+
+Platform Layer
+
+↓
+
+Media Layer
+
+↓
+
+System Layer
+```
+
+Dependencies always point downward.
+
+Reason
+
+This keeps responsibilities clear and prevents architectural drift.
 
 ---
 
 # ADR-007
 
-## Title
+## Generic Video Model
 
-GPU Acceleration
-
-## Decision
-
-Prefer **AMD AMF**.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-Target hardware includes an AMD Radeon RX6600.
+After platform resolution, every video shall be represented by the same generic data model.
 
-Hardware encoding significantly reduces processing time when re-encoding is required.
+Example:
+
+* VideoMetadata
+* StreamInfo
+* ClipRequest
+
+Core services must never distinguish between YouTube, Kick, or future platforms.
+
+Reason
+
+The application processes media, not platforms.
 
 ---
 
 # ADR-008
 
-## Title
+## FFmpeg Isolation
 
-Video Processing Priority
-
-## Decision
-
-Always use:
-
-1. Stream Copy
-2. GPU Encoding
-3. CPU Encoding
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-This order provides the best balance between performance and output quality.
+Only the FFmpeg wrapper may execute FFmpeg.
+
+No service may build or execute FFmpeg commands directly.
+
+Reason
+
+Centralized command generation improves maintainability and testing.
 
 ---
 
 # ADR-009
 
-## Title
+## FFprobe Isolation
 
-Application Type
-
-## Decision
-
-Desktop only.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-This application is intended exclusively for local personal use.
+Media inspection shall be performed exclusively through the FFprobe wrapper.
 
-Cloud deployment is intentionally excluded.
+Reason
+
+Keeps metadata retrieval centralized and reusable.
 
 ---
 
 # ADR-010
 
-## Title
+## yt-dlp Isolation
 
-Architecture Style
-
-## Decision
-
-Use a simple layered architecture.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-The project does not require enterprise architecture.
+The application must never call yt-dlp directly from business services.
 
-Simple layering improves maintainability.
+Only Platform Adapters may interact with yt-dlp.
+
+Reason
+
+yt-dlp is an implementation detail of supported platforms, not part of the application's business logic.
 
 ---
 
 # ADR-011
 
-## Title
+## Thin Frontend
 
-Database
-
-## Decision
-
-No database.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-The application is single-user.
+The frontend is responsible only for presentation and user interaction.
 
-JSON configuration and lightweight storage are sufficient.
+Business logic belongs exclusively to the Go backend.
+
+Reason
+
+Maintains a clear separation of concerns.
 
 ---
 
 # ADR-012
 
-## Title
+## Explicit Dependencies
 
-Queue System
-
-## Decision
-
-Use Go Worker Pool.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-No Redis or external queue is required.
+Use constructor injection.
 
-Go provides efficient concurrency primitives.
+Avoid dependency injection frameworks.
+
+Reason
+
+Explicit dependencies are easier to understand and debug.
 
 ---
 
 # ADR-013
 
-## Title
+## Domain-Oriented Packages
 
-Configuration
-
-## Decision
-
-Store configuration in:
-
-settings.json
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-Human-readable.
+Packages are organized by business domain rather than technical type.
 
-Easy backup.
+Examples:
 
-Easy debugging.
+* clip
+* download
+* platform
+* settings
+
+Avoid generic packages such as:
+
+* helpers
+* managers
+* common
+
+Reason
+
+Domain-oriented organization improves discoverability and long-term maintenance.
 
 ---
 
 # ADR-014
 
-## Title
+## Local Media Pipeline
 
-History Storage
-
-## Decision
-
-Store history locally.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-No persistent database is necessary.
+After download completes, all subsequent workflows operate exclusively on local media files.
 
-History remains lightweight.
+Reason
+
+Separating platform access from media processing keeps the architecture modular.
 
 ---
 
 # ADR-015
 
-## Title
+## Stable Public Interfaces
 
-External Commands
-
-## Decision
-
-Wrap every external executable inside dedicated Go services.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-Centralized error handling.
+Public interfaces should evolve slowly.
 
-Better testing.
+Internal implementations may change without affecting higher layers.
 
-Cleaner architecture.
+Reason
+
+Stable contracts reduce refactoring and improve long-term maintainability.
 
 ---
 
 # ADR-016
 
-## Title
+## Simplicity Over Flexibility
 
-Progress Communication
-
-## Decision
-
-Use Wails Events.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-Native desktop communication.
+Prefer straightforward implementations over highly configurable abstractions.
 
-No WebSocket required.
+Avoid speculative architecture.
+
+Reason
+
+The project is maintained by a solo developer with AI assistance.
+
+Simplicity improves development speed and readability.
 
 ---
 
 # ADR-017
 
-## Title
+## Minimal Dependencies
 
-Logging
-
-## Decision
-
-Store logs locally.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-Simple debugging.
+Introduce third-party libraries only when they provide substantial value.
 
-No external logging service.
+Avoid dependencies for simple functionality.
+
+Reason
+
+A smaller dependency graph is easier to maintain and update.
 
 ---
 
 # ADR-018
 
-## Title
+## Testing Strategy
 
-Dependency Philosophy
-
-## Decision
-
-Prefer the Go standard library whenever practical.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-Reduce dependencies.
+Business logic should be covered primarily by unit tests.
 
-Improve maintainability.
+Integration tests should focus on wrappers and external tools.
 
-Reduce upgrade risks.
+Reason
+
+Fast, deterministic tests support frequent refactoring.
 
 ---
 
 # ADR-019
 
-## Title
+## Documentation as Source of Truth
 
-Architecture Complexity
-
-## Decision
-
-Avoid enterprise patterns.
-
-## Status
+Status
 
 Accepted
 
-## Rationale
+Decision
 
-The project is intentionally simple.
+The documentation inside `.contexts/` defines the project's engineering standards.
 
-Avoid introducing:
+Implementation should follow documentation.
 
-* Repository Pattern
-* CQRS
-* Event Bus
-* Service Locator
-* Generic Dependency Injection
+If implementation and documentation diverge, update the documentation first before making architectural changes.
 
-unless explicitly requested.
+Reason
+
+Shared documentation keeps AI and developer aligned over time.
 
 ---
 
-# ADR-020
+# ADR Maintenance
 
-## Title
+When introducing a significant architectural decision:
 
-Processing Location
+1. Create a new ADR.
+2. Assign the next sequential number.
+3. Mark its status.
+4. Explain the decision.
+5. Explain the reasoning.
 
-## Decision
-
-All video processing occurs locally.
-
-## Status
-
-Accepted
-
-## Rationale
-
-No cloud processing.
-
-No remote workers.
-
-No external services.
+Do not rewrite existing ADRs unless the architecture intentionally changes.
 
 ---
 
-# ADR-021
+# AI Guidelines
 
-## Title
+When generating code:
 
-Project Philosophy
-
-## Decision
-
-The application is optimized for:
-
-* Simplicity
-* Performance
-* Maintainability
-* Local-first workflow
-
-## Status
-
-Accepted
-
-## Rationale
-
-The application should remain understandable and maintainable by a single developer.
+* Follow accepted ADRs.
+* Do not introduce alternative architectures.
+* Do not replace existing patterns without approval.
+* Respect architectural boundaries.
+* Treat ADRs as permanent project rules.
 
 ---
 
-# ADR-022
+# Decisions Philosophy
 
-## Title
+Architecture should evolve intentionally, not accidentally.
 
-Project Scope
+Every major decision should be documented once and followed consistently.
 
-## Decision
-
-This project intentionally excludes:
-
-* Authentication
-* Multi-user support
-* REST API
-* Cloud deployment
-* Docker
-* Kubernetes
-* PostgreSQL
-* Redis
-* RabbitMQ
-* Kafka
-* Microservices
-
-## Status
-
-Accepted
-
-## Rationale
-
-These technologies provide no meaningful benefit for a single-user desktop application.
-
----
-
-# ADR Lifecycle
-
-Each decision has one of the following statuses:
-
-* Proposed
-* Accepted
-* Deprecated
-* Replaced
-
-Only **Accepted** decisions should guide implementation.
-
----
-
-# Modifying Decisions
-
-An accepted decision should only be changed when:
-
-* The project owner explicitly requests it.
-* A new ADR supersedes the previous one.
-* The original decision is no longer technically valid.
-
-Do not replace accepted decisions automatically.
-
----
-
-# AI Instructions
-
-Before suggesting architectural changes:
-
-1. Read this document.
-2. Verify whether an ADR already exists.
-3. If an accepted ADR exists, follow it.
-4. Do not propose alternative architectures unless explicitly requested.
-5. If a new architectural decision is necessary, propose a new ADR instead of silently changing existing behavior.
-
----
-
-# Guiding Principle
-
-Architecture decisions exist to preserve consistency over time.
-
-A simpler architecture that remains consistent is preferred over a more flexible architecture that introduces unnecessary complexity.
+Well-documented decisions reduce uncertainty, prevent unnecessary refactoring, and keep the project coherent as it grows.

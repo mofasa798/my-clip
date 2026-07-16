@@ -1,387 +1,384 @@
 # 02_ARCHITECTURE.md
 
-# Project Architecture
+# System Architecture
 
 This document defines the high-level architecture of the application.
 
-Its purpose is to ensure every module has a clear responsibility, maintain a clean dependency flow, and keep the project simple as it grows.
+Its purpose is to establish clear responsibilities, dependency boundaries, and communication flow between all major components.
 
-Detailed implementation belongs to each module and should not violate the architecture defined here.
+The architecture is designed to be platform-agnostic, modular, and easy to extend.
 
 ---
 
-# Architecture Philosophy
+# Architecture Principles
 
-The architecture follows these principles:
+The application follows these principles:
 
-* Local-first
-* Modular
-* Layered
-* Maintainable
-* Performance-oriented
-* Minimal abstraction
+* Platform-independent
+* Layered architecture
+* Single responsibility
+* Explicit dependencies
+* Local-first execution
+* Composition over inheritance
+* Simplicity over abstraction
 
-The application is intentionally designed as a **single executable desktop application**.
-
-There are no remote services.
-
-There are no microservices.
-
-There is no distributed processing.
+Every layer should have one clear purpose.
 
 ---
 
 # High-Level Architecture
 
-```text
-┌─────────────────────────────┐
-│         React UI            │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│           Wails             │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│     Go Application Layer    │
-└──────────────┬──────────────┘
-               │
- ┌─────────────┴─────────────┐
- ▼                           ▼
-Business Services      Infrastructure
-                             │
-          ┌──────────────────┴──────────────────┐
-          ▼                                     ▼
-      FFmpeg / FFprobe                     yt-dlp
+```text id="0c6xra"
+                 User Interface
+                       │
+                       ▼
+              Application Layer
+                       │
+                       ▼
+               Platform Layer
+                       │
+                       ▼
+            Media Processing Layer
+                       │
+                       ▼
+                System Layer
 ```
+
+Dependencies always point downward.
+
+No layer may bypass another.
 
 ---
 
 # Layer Responsibilities
 
-## Presentation Layer
+## User Interface
 
-Technology:
+Responsible for:
 
-* React
-* TypeScript
-* TailwindCSS
+* User interaction
+* Timeline editing
+* Video preview
+* Progress display
+* Settings
+* Navigation
 
-Responsibilities:
-
-* User Interface
-* User Interaction
-* Timeline
-* Preview
-* Progress
-* Forms
-* Notifications
-
-Must NOT:
-
-* Execute FFmpeg
-* Execute yt-dlp
-* Access files directly
-* Implement business logic
+The UI never owns business logic.
 
 ---
 
 ## Application Layer
 
-Technology:
-
-* Go
+Coordinates application workflows.
 
 Responsibilities:
 
-* Business Logic
-* Workflow orchestration
-* Validation
-* Settings
-* History
-* Event handling
-* Progress updates
+* Clip creation
+* Export workflow
+* Download workflow
+* Settings management
+* History management
+* Progress orchestration
 
-This layer coordinates all modules.
-
-It should remain independent from UI implementation details.
+The Application Layer coordinates services but does not implement platform-specific behavior.
 
 ---
 
-## Infrastructure Layer
+## Platform Layer
+
+The Platform Layer isolates every supported video platform.
 
 Responsibilities:
 
-* FFmpeg
-* FFprobe
-* yt-dlp
-* File System
-* GPU Detection
-* Process Execution
+* Detect platform
+* Validate URL
+* Retrieve metadata
+* Retrieve available streams
+* Download media
 
-Every external dependency belongs here.
-
----
-
-# Dependency Direction
-
-Dependencies must always flow downward.
-
-```text
-Presentation
-
-↓
-
-Application
-
-↓
-
-Infrastructure
-```
-
-Never reverse this direction.
-
-Forbidden:
-
-Infrastructure → UI
-
-Infrastructure → React
-
-Infrastructure → Wails
-
-Business Logic → React
+The rest of the application must never communicate directly with platform implementations.
 
 ---
 
-# Module Responsibilities
+## Media Processing Layer
 
-## app
-
-Application bootstrap.
+Responsible for local media processing.
 
 Responsibilities:
 
-* Startup
-* Shutdown
-* Initialization
-* Dependency verification
+* Clip extraction
+* Video encoding
+* Stream copy
+* GPU acceleration
+* Metadata inspection
+
+This layer operates only on local media.
+
+It does not know where the media originated.
 
 ---
 
-## clip
+## System Layer
 
-Handles clip generation.
-
-Responsibilities:
-
-* Trim
-* Export
-* Processing strategy
-* Output validation
-
----
-
-## download
-
-Handles downloading.
-
-Responsibilities:
-
-* Metadata
-* Video download
-* Thumbnail download
-* Progress reporting
-
----
-
-## ffmpeg
-
-Wrapper around FFmpeg.
-
-Responsibilities:
-
-* Command generation
-* Command execution
-* Progress parsing
-* Error handling
-
-Never expose raw FFmpeg commands to other modules.
-
----
-
-## ffprobe
-
-Wrapper around FFprobe.
-
-Responsibilities:
-
-* Metadata
-* Streams
-* Duration
-* Codec information
-
----
-
-## gpu
-
-GPU capability detection.
-
-Responsibilities:
-
-* Detect AMF
-* Detect supported encoders
-* Determine encoding strategy
-
----
-
-## settings
-
-Application configuration.
-
-Responsibilities:
-
-* Load configuration
-* Save configuration
-* Validate configuration
-* Default values
-
----
-
-## history
-
-Stores application history.
-
-Responsibilities:
-
-* Recent downloads
-* Recent exports
-
-Should remain lightweight.
-
----
-
-## worker
-
-Runs background jobs.
-
-Responsibilities:
-
-* Download
-* Export
-* Thumbnail extraction
-
-Worker Pool should remain simple.
-
-No queue server.
-
-No scheduler.
-
----
-
-## utils
-
-Reusable helper functions.
-
-Must NOT contain business logic.
-
-Avoid turning utils into a dumping ground.
-
----
-
-# Directory Structure
-
-```text
-backend/
-
-cmd/
-
-internal/
-
-app/
-clip/
-download/
-ffmpeg/
-ffprobe/
-gpu/
-history/
-settings/
-worker/
-utils/
-
-frontend/
-
-components/
-hooks/
-pages/
-types/
-
-storage/
-
-downloads/
-output/
-thumbnail/
-logs/
-
-bin/
-
-ffmpeg.exe
-ffprobe.exe
-yt-dlp.exe
-```
-
----
-
-# Event Flow
-
-Communication between Backend and Frontend uses Wails Events.
-
-```text
-Backend
-
-↓
-
-Emit Event
-
-↓
-
-Frontend
-
-↓
-
-Update UI
-```
+Responsible for operating system interaction.
 
 Examples:
 
-* Download Progress
-* Export Progress
-* Completion
-* Errors
-
-No WebSocket is required.
+* File system
+* External processes
+* Logging
+* Configuration
+* Background workers
 
 ---
 
-# Processing Flow
+# Dependency Flow
 
-Video download:
-
-```text
-User
+```text id="lrbhtf"
+React UI
 
 ↓
 
-Paste URL
+Application Services
 
 ↓
 
-yt-dlp
+Platform Services
 
 ↓
 
-Metadata
+Media Services
+
+↓
+
+System Services
+
+↓
+
+Operating System
+```
+
+Communication must always follow this direction.
+
+---
+
+# Platform Architecture
+
+The application should support multiple platforms through adapters.
+
+```text id="wwb55u"
+Video URL
+
+↓
+
+Platform Resolver
+
+↓
+
+Platform Adapter
+
+↓
+
+Generic Video Source
+```
+
+Every supported platform should expose the same capabilities.
+
+---
+
+# Platform Adapter
+
+Each adapter should implement the same interface.
+
+Responsibilities:
+
+* URL validation
+* Metadata retrieval
+* Stream discovery
+* Download support
+
+Platform adapters should not contain business logic.
+
+---
+
+# Generic Video Source
+
+Once a video has been resolved, it becomes a generic media source.
+
+Example model:
+
+```text id="u4m3ax"
+VideoMetadata
+
+Platform
+
+Title
+
+Author
+
+Duration
+
+Thumbnail
+
+Streams
+
+Live
+
+URL
+```
+
+Higher layers should only consume this model.
+
+---
+
+# Download Pipeline
+
+```text id="rmfjnv"
+Video URL
+
+↓
+
+Platform Resolver
+
+↓
+
+Platform Adapter
+
+↓
+
+Download Service
+
+↓
+
+Local Media File
+```
+
+The Download Service never knows which platform provided the media.
+
+---
+
+# Clip Pipeline
+
+```text id="lya9v2"
+Local Media File
+
+↓
+
+Timeline
+
+↓
+
+Clip Service
+
+↓
+
+FFmpeg
+
+↓
+
+Exported Clip
+```
+
+The Clip Pipeline operates exclusively on local files.
+
+---
+
+# Export Pipeline
+
+Preferred processing strategy:
+
+```text id="xgcrki"
+Stream Copy
+
+↓
+
+GPU Encoding
+
+↓
+
+CPU Encoding
+```
+
+The Export Pipeline is completely platform-independent.
+
+---
+
+# Platform Independence
+
+Platform-specific logic ends after download.
+
+Everything beyond this point operates on generic local media.
+
+This separation is mandatory.
+
+---
+
+# Backend Structure
+
+```text id="31odlu"
+backend/internal/
+
+app/
+
+domain/
+    clip/
+    download/
+    history/
+    settings/
+
+platform/
+    resolver/
+    adapters/
+
+media/
+    ffmpeg/
+    ffprobe/
+    gpu/
+
+system/
+    logger/
+    worker/
+    filesystem/
+```
+
+Each directory represents a distinct architectural boundary.
+
+---
+
+# Frontend Structure
+
+```text id="tezzjp"
+frontend/src/
+
+pages/
+components/
+hooks/
+services/
+stores/
+types/
+constants/
+```
+
+The frontend remains presentation-focused.
+
+---
+
+# Data Flow
+
+```text id="k44ks4"
+User Action
+
+↓
+
+UI
+
+↓
+
+Application Service
+
+↓
+
+Platform Layer
 
 ↓
 
@@ -390,247 +387,170 @@ Download
 ↓
 
 Local File
+
+↓
+
+Media Processing
+
+↓
+
+Export
+
+↓
+
+History
 ```
 
-Clip generation:
-
-```text
-User
-
-↓
-
-Select Range
-
-↓
-
-Determine Strategy
-
-↓
-
-FFmpeg
-
-↓
-
-Output File
-```
+Every workflow should follow this pattern.
 
 ---
 
-# Video Processing Strategy
+# Event Flow
 
-Always determine the most efficient strategy.
+```text id="pm0g7g"
+Backend
 
-Priority:
+↓
 
-1. Stream Copy
-2. GPU Encoding
-3. CPU Encoding
+Wails Events
 
-Never encode unless necessary.
+↓
 
----
+Frontend Services
 
-# External Processes
+↓
 
-Only dedicated wrappers may execute:
+React State
 
-* FFmpeg
-* FFprobe
-* yt-dlp
+↓
 
-The rest of the application must interact only through service methods.
-
-Never construct command-line arguments outside these wrappers.
-
----
-
-# File Storage
-
-Application data:
-
-```text
-storage/
-
-downloads/
-output/
-thumbnail/
-logs/
+UI Update
 ```
 
-Configuration:
-
-```text
-settings.json
-```
-
-History may be stored as JSON.
-
-No database server is required.
+The frontend should never poll backend progress.
 
 ---
 
 # Error Flow
 
-Every external command should return:
-
-* Success
-* Exit Code
-* stdout
-* stderr
-* Duration
-* Structured Error
-
 Errors should propagate upward.
 
-Presentation layer is responsible only for displaying them.
-
----
-
-# Concurrency
-
-Concurrency should remain simple.
-
-Preferred model:
-
-```text
-User Request
+```text id="mddjlwm"
+System
 
 ↓
 
-Worker Pool
+Media
 
 ↓
 
-External Process
+Platform
 
 ↓
-
-Progress Event
-
-↓
-
-UI
-```
-
-Do not introduce complex scheduling systems.
-
-Go Goroutines are sufficient.
-
----
-
-# GPU Architecture
-
-GPU detection occurs once during application startup.
-
-Preferred encoder priority:
-
-1. h264_amf
-2. hevc_amf
-3. libx264
-
-GPU availability should be transparent to users.
-
----
-
-# Configuration Flow
-
-```text
-Startup
-
-↓
-
-Load settings.json
-
-↓
-
-Validate
-
-↓
-
-Apply Defaults
-
-↓
-
-Ready
-```
-
-Configuration should never prevent application startup.
-
-Invalid values should fall back to defaults whenever possible.
-
----
-
-# Logging Flow
 
 Application
 
 ↓
 
-Logger
+User Interface
+```
+
+Every layer should enrich errors with useful context.
+
+---
+
+# Extension Strategy
+
+Adding a new platform should require only:
+
+1. Creating a new Platform Adapter.
+2. Registering it in the Platform Resolver.
+
+No changes should be required in:
+
+* Clip Service
+* Export Service
+* FFmpeg Wrapper
+* GPU Module
+* UI
+
+---
+
+# Dependency Rules
+
+Allowed:
+
+```text id="7kqfjb"
+Application
 
 ↓
 
-storage/logs/
+Platform
 
-Log categories:
+↓
 
-* Startup
-* Download
-* Export
-* Settings
-* External Process
-* Errors
+Media
 
-Logging should aid debugging without becoming excessively verbose.
+↓
 
----
+System
+```
 
-# Extensibility
+Forbidden:
 
-Future modules should integrate without changing existing architecture.
+```text id="svf3qv"
+Platform
 
-Examples:
+↓
 
-* Playlist Download
-* Livestream Support
-* Batch Processing
-* Subtitle Burn-in
+React
+```
 
-New modules should follow the same dependency rules.
+Forbidden:
 
----
+```text id="kqzsz8"
+FFmpeg
 
-# Architecture Constraints
+↓
 
-The following are intentionally excluded:
+Platform Adapter
+```
 
-* REST API
-* GraphQL
-* Database Server
-* Redis
-* RabbitMQ
-* Kafka
-* Docker
-* Kubernetes
-* Plugin Framework
-* Distributed Workers
-* Microservices
-
-The architecture is intentionally optimized for a single-user desktop application.
+Lower layers must never depend on higher layers.
 
 ---
 
-# Success Criteria
+# Future Expansion
 
-A successful architecture should provide:
+The architecture should support future platforms such as:
 
-* Clear module boundaries.
-* Simple dependency flow.
-* Minimal coupling.
-* High cohesion.
-* Easy navigation.
-* Easy maintenance.
-* Straightforward debugging.
-* Predictable behavior.
+* Twitch
+* Vimeo
+* Other online video providers
 
-If a new design increases complexity without providing significant value, it should not be adopted.
+without requiring changes to the application's core workflows.
+
+---
+
+# AI Guidelines
+
+When generating architecture-related code:
+
+* Keep platform logic isolated.
+* Keep media processing platform-independent.
+* Prefer explicit interfaces.
+* Avoid unnecessary abstractions.
+* Follow the defined dependency flow.
+* Never bypass architectural boundaries.
+
+---
+
+# Architecture Philosophy
+
+The architecture is centered around **generic video sources**, not individual platforms.
+
+Platforms are interchangeable implementations.
+
+The core application should only understand media, workflows, and user actions.
+
+A new platform should integrate by implementing the Platform Adapter, while the rest of the application remains unchanged.

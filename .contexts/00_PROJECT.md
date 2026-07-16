@@ -2,405 +2,264 @@
 
 # Project Overview
 
-## Vision
+## Project Name
 
-Build a fast, lightweight, and reliable desktop application for creating high-quality video clips from YouTube and Kick videos or livestreams.
-
-The application is designed exclusively for **local desktop usage** and focuses on providing the fastest possible clipping workflow while maintaining excellent video quality.
-
-The project prioritizes simplicity, maintainability, and performance over unnecessary flexibility or enterprise architecture.
+Multi-Platform Video Clipper
 
 ---
 
-# Objectives
+# Vision
 
-The application should allow users to:
+Build a fast, reliable, and easy-to-use desktop application that allows users to download, preview, clip, and export videos from supported online platforms.
 
-* Download videos or livestreams from YouTube and Kick.
-* Preview video metadata before downloading.
-* Select precise clip ranges using a visual timeline.
-* Export clips quickly with minimal quality loss.
-* Automatically choose the most efficient processing strategy.
-* Utilize GPU hardware acceleration whenever frame re-encoding is required.
-* Provide a clean, responsive, and intuitive desktop experience.
+The application should provide a consistent user experience regardless of the original video platform.
+
+All platform-specific implementations must remain isolated from the core application.
 
 ---
 
-# Project Scope
+# Mission
 
-This application is intended for:
+Develop a local-first desktop application capable of:
 
-* Personal use only.
-* Windows desktop.
-* Local processing.
-* Single user.
+* Detecting supported video platforms
+* Retrieving video metadata
+* Downloading videos
+* Creating high-quality clips
+* Exporting clips efficiently using GPU acceleration whenever possible
 
-The application does not require internet services beyond downloading videos from supported platforms.
+The application should prioritize performance, reliability, and simplicity.
 
-No cloud infrastructure is required.
+---
+
+# Core Principles
+
+The project follows these principles:
+
+* Multi-platform by design
+* Platform-agnostic architecture
+* Local-first processing
+* Performance-oriented implementation
+* Simple and maintainable codebase
+* Minimal dependencies
+* Consistent user experience
+
+---
+
+# Supported Platforms
+
+Current targets:
+
+* YouTube
+* Kick
+
+Future expansion may include additional platforms through the Platform Adapter layer without requiring changes to the core application.
+
+---
+
+# Primary Workflow
+
+```text id="q5r3ha"
+Paste Video URL
+
+↓
+
+Detect Platform
+
+↓
+
+Load Metadata
+
+↓
+
+Download Video
+
+↓
+
+Preview Video
+
+↓
+
+Select Clip Range
+
+↓
+
+Export Clip
+
+↓
+
+Open Output Folder
+```
+
+Every feature should support this workflow.
+
+---
+
+# Platform Independence
+
+The application should never assume a specific video platform.
+
+After a URL has been resolved by the Platform Layer, every video should be treated as a generic video source.
+
+The clipping, exporting, previewing, and processing pipelines must remain completely independent of the originating platform.
 
 ---
 
 # Target Environment
 
-## Operating System
+Operating System
 
-* Windows 11
+* Windows (Primary)
 
-## Hardware
+Future support:
 
-CPU
+* Linux
+* macOS
 
-* AMD Ryzen 5 Pro 4650G
-* 6 Cores / 12 Threads
-
-GPU
-
-* AMD Radeon RX 6600 8GB
-
-Memory
-
-* 16GB DDR4
-
-Storage
-
-* SSD recommended
-
-The application should be optimized specifically for this hardware configuration.
-
----
-
-# Technology Stack
-
-## Desktop Framework
+Desktop Framework
 
 * Wails v3
 
-## Frontend
+Execution Model
 
-* React
-* TypeScript
-* Vite
-* Tailwind CSS
+* Local Desktop Application
 
-## Backend
-
-* Go 1.24+
-
-## Video Processing
-
-* FFmpeg
-* FFprobe
-
-## Video Download
-
-* yt-dlp
-
-## Version Control
-
-* Git
+Cloud deployment is out of scope.
 
 ---
 
-# Core Features
+# Processing Philosophy
 
-The application should support the following capabilities.
+Video processing should follow this priority:
 
-## Video Discovery
+```text id="v1amhs"
+Stream Copy
 
-* Load YouTube videos.
-* Load Kick videos.
-* Load livestreams (future enhancement).
-* Retrieve metadata.
-* Retrieve thumbnails.
-* Retrieve available video formats.
+↓
 
-## Download
+GPU Encoding
 
-* Download selected video quality.
-* Download audio when required.
-* Display download progress.
-* Support cancellation.
+↓
 
-## Clip Editor
-
-* Video preview.
-* Interactive timeline.
-* Start marker.
-* End marker.
-* Frame preview.
-* Manual timestamp editing.
-
-## Export
-
-* Stream Copy clipping.
-* GPU accelerated encoding.
-* CPU fallback.
-* Output filename customization.
-* Output directory selection.
-
-## Settings
-
-* Output directory.
-* Download directory.
-* Theme.
-* Preferred codec.
-* GPU preference.
-
----
-
-# Processing Strategy
-
-The application should always select the fastest processing method available.
-
-Processing priority:
-
-1. Stream Copy
-2. GPU Encoding
-3. CPU Encoding
-
-## Stream Copy
-
-When the clip does not require visual modifications:
-
-* No re-encoding.
-* Original quality preserved.
-* Extremely fast.
-* Minimal CPU usage.
-* GPU is not required.
-
-This should always be the preferred strategy.
-
-## GPU Encoding
-
-GPU encoding is only used when frame processing is required.
-
-Examples include:
-
-* Resize
-* Crop
-* Watermark
-* Subtitle burn-in
-* Overlay
-* Rotation
-* Video filters
-* Codec conversion
-* FPS conversion
-
-Preferred encoder:
-
-* h264_amf
-
-Alternative encoder:
-
-* hevc_amf
-
-## CPU Encoding
-
-Used only when GPU acceleration is unavailable or unsupported.
-
-Preferred encoder:
-
-* libx264
-
----
-
-# GPU Support
-
-The application should automatically detect available GPU encoders during startup.
-
-Preferred order:
-
-1. AMD AMF
-2. CPU
-
-No manual configuration should be required for normal usage.
-
----
-
-# Application Philosophy
-
-This project follows several guiding principles.
-
-## Local First
-
-Everything runs locally.
-
-No cloud services.
-
-No remote processing.
-
-No online authentication.
-
-## Performance First
-
-Always prioritize:
-
-* Fast startup.
-* Fast clipping.
-* Low memory usage.
-* Efficient CPU utilization.
-* Efficient GPU utilization.
-
-## Simplicity First
-
-The project intentionally avoids unnecessary complexity.
-
-The implementation should remain understandable by a single developer.
-
-## Maintainability
-
-Readable code is preferred over clever code.
-
-Simple architecture is preferred over flexible architecture.
-
-Avoid unnecessary abstractions.
-
----
-
-# Directory Overview
-
-The project is expected to follow this high-level structure.
-
-```text
-backend/
-frontend/
-bin/
-storage/
-.contexts/
+CPU Encoding
 ```
 
-Each major area has a dedicated responsibility.
-
-Detailed structure is documented separately in:
-
-* 02_ARCHITECTURE.md
+The application should always choose the fastest reliable processing strategy.
 
 ---
 
-# External Dependencies
+# Performance Goals
 
-Required binaries:
+The application should:
 
-* FFmpeg
-* FFprobe
-* yt-dlp
+* Start quickly
+* Consume minimal memory
+* Keep the UI responsive
+* Utilize hardware acceleration when available
+* Avoid unnecessary processing
+* Handle large video files efficiently
 
-These binaries should be bundled inside the project.
+---
 
-```text
-bin/
+# Architecture Philosophy
 
-ffmpeg.exe
-ffprobe.exe
-yt-dlp.exe
+The application is divided into independent layers.
+
+```text id="yjlwmk"
+User Interface
+
+↓
+
+Application Layer
+
+↓
+
+Platform Layer
+
+↓
+
+Media Processing Layer
+
+↓
+
+System Layer
 ```
 
-The backend is responsible for invoking and managing all external processes.
+Each layer has a single responsibility.
+
+Platform-specific logic must never leak into higher layers.
 
 ---
 
-# Configuration
+# User Experience Goals
 
-Application configuration should be stored locally.
+The application should provide:
 
-Example:
+* Fast metadata retrieval
+* Responsive timeline editing
+* Smooth video preview
+* Reliable downloads
+* Predictable exports
+* Clear progress reporting
+* Friendly error messages
 
-```text
-settings.json
-```
-
-Configuration may include:
-
-* Output directory
-* Download directory
-* Preferred codec
-* GPU preference
-* Theme
-
-The configuration format should remain human-readable.
+Users should be able to create clips with minimal configuration.
 
 ---
 
-# Logging
+# Scope
 
-The application should generate logs for debugging purposes.
+Included:
 
-Suggested location:
+* Multi-platform video support
+* Metadata retrieval
+* Video downloading
+* Video preview
+* Clip creation
+* GPU-accelerated export
+* Export history
+* Configurable settings
 
-```text
-storage/logs/
-```
+Excluded:
 
-Logs should include:
-
-* Application startup
-* External process execution
-* Download events
-* Export events
-* Error messages
-
----
-
-# Documentation
-
-Project documentation is organized inside the `.contexts` directory.
-
-Each document has a single responsibility.
-
-Project documentation should never duplicate information across multiple files.
-
-When information belongs to another document, reference that document instead.
-
----
-
-# Related Documents
-
-* INDEX.md
-* 01_RULES.md
-* 02_ARCHITECTURE.md
-* 03_ROADMAP.md
-* 04_DECISIONS.md
-* 05_SPRINT.md
-* 06_PROMPT.md
-* 07_CODE_STYLE.md
-* 08_PROJECT_STRUCTURE.md
-
----
-
-# Non Goals
-
-The following are intentionally excluded from this project.
-
-* Cloud deployment
-* Multi-user support
-* Authentication
-* REST API server
-* Database server
-* PostgreSQL
-* MySQL
-* Redis
-* RabbitMQ
-* Kafka
-* Docker
-* Kubernetes
-* Microservices
-* Distributed processing
-
-The application is intentionally designed to remain a lightweight, local-first desktop application optimized for a single user.
+* Cloud services
+* User accounts
+* Video uploading
+* Collaborative editing
+* Online processing
 
 ---
 
 # Success Criteria
 
-The project is considered successful when it achieves the following goals:
+The project is considered successful when it can:
 
-* Fast application startup.
-* Reliable video downloading.
-* Responsive user interface.
-* Accurate clip generation.
-* Minimal quality loss.
-* Efficient GPU utilization.
-* Stable desktop experience.
-* Easy long-term maintenance.
-* Clear and consistent project architecture.
+* Detect supported platforms automatically
+* Download videos reliably
+* Export clips efficiently
+* Use GPU acceleration when available
+* Fall back gracefully to CPU encoding
+* Remain stable during long-running operations
+* Maintain a clean and understandable architecture
+
+---
+
+# Long-Term Vision
+
+The application should remain easy to extend.
+
+Adding support for a new platform should require implementing a new Platform Adapter without modifying the clipping, processing, or export pipelines.
+
+The core application should remain independent from any individual video platform.
+
+---
+
+# Project Philosophy
+
+This project is not a YouTube clipper.
+
+It is a multi-platform desktop application for clipping online videos.
+
+Platform support is a replaceable implementation detail.
+
+The core application should always remain platform-agnostic, modular, and maintainable.

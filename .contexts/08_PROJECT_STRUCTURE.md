@@ -2,11 +2,11 @@
 
 # Project Structure
 
-This document defines the physical structure of the project.
+This document defines the physical organization of the project.
 
-Its purpose is to ensure all source code is organized consistently throughout the project's lifetime.
+Its purpose is to provide a predictable structure for both developers and AI assistants.
 
-This document describes **where code belongs**, not how it works.
+Every directory should have a single, well-defined responsibility.
 
 ---
 
@@ -14,19 +14,21 @@ This document describes **where code belongs**, not how it works.
 
 The project structure should be:
 
-* Simple
-* Predictable
 * Domain-oriented
+* Platform-agnostic
 * Easy to navigate
-* Easy to maintain
+* Easy to extend
+* Consistent
 
 Avoid unnecessary nesting.
+
+Avoid generic folders.
 
 ---
 
 # Top-Level Structure
 
-```text id="9jzxtv"
+```text
 project/
 
 .contexts/
@@ -37,7 +39,6 @@ frontend/
 
 bin/
 storage/
-
 scripts/
 
 go.mod
@@ -47,18 +48,21 @@ README.md
 
 ---
 
-# Directory Responsibilities
+# Directory Overview
 
 ## .contexts
 
-Contains AI documentation.
+Engineering documentation for AI and developers.
 
-Examples:
+Contains:
 
 * Project rules
 * Architecture
+* Roadmap
+* ADR
 * Sprint
 * Code style
+* Testing
 
 No source code.
 
@@ -66,25 +70,25 @@ No source code.
 
 ## docs
 
-Contains technical documentation.
+Technical documentation.
 
 Examples:
 
-* FFmpeg
-* GPU
-* Backend
-* Frontend
-* UI
-
-No source code.
+* backend.md
+* frontend.md
+* ffmpeg.md
+* gpu.md
+* platform.md
+* ui.md
+* design_system.md
 
 ---
 
 ## backend
 
-Contains all Go application code.
+Contains the complete Go application.
 
-Business logic belongs here.
+All business logic lives here.
 
 ---
 
@@ -96,54 +100,56 @@ Presentation only.
 
 ---
 
-## storage
-
-Application data.
-
-Examples:
-
-* Settings
-* History
-* Temporary files
-* Export output
-
-Do not commit generated files.
-
----
-
 ## bin
 
 External executables.
 
 Examples:
 
-```text id="lw7hpg"
+```text
 ffmpeg
-
 ffprobe
-
 yt-dlp
 ```
 
-Platform-specific binaries may be stored in subdirectories if needed.
+Platform-specific binaries may be organized into subdirectories.
+
+---
+
+## storage
+
+Application data.
+
+Examples:
+
+```text
+settings/
+history/
+cache/
+exports/
+temp/
+logs/
+```
+
+Generated files should never be committed.
 
 ---
 
 ## scripts
 
-Development scripts.
+Development utilities.
 
 Examples:
 
-* Build
-* Clean
-* Release
+* build
+* release
+* clean
 
 ---
 
 # Backend Structure
 
-```text id="8ebn0q"
+```text
 backend/
 
 main.go
@@ -151,149 +157,146 @@ main.go
 internal/
 
     app/
-    clip/
-    download/
-    event/
-    ffmpeg/
-    ffprobe/
-    gpu/
-    history/
-    logger/
-    settings/
-    worker/
+
+    domain/
+
+        clip/
+        download/
+        history/
+        settings/
+
+    platform/
+
+        resolver/
+
+        adapters/
+
+            youtube/
+            kick/
+
+    media/
+
+        ffmpeg/
+        ffprobe/
+        gpu/
+
+    system/
+
+        filesystem/
+        logger/
+        worker/
+
     shared/
 ```
 
-Everything inside `internal/` is private to the application.
+The backend is organized by architectural boundaries rather than implementation details.
 
 ---
 
-# Package Responsibilities
+# Backend Responsibilities
 
 ## app
 
 Application lifecycle.
 
-Startup.
-
-Shutdown.
-
-Initialization.
-
----
-
-## clip
-
-Clip creation.
-
-Export orchestration.
-
-Processing pipeline.
+* Startup
+* Shutdown
+* Dependency initialization
+* Service registration
 
 ---
 
-## download
+## domain
 
-Metadata.
+Core business logic.
 
-Download.
+Contains:
 
-Video retrieval.
+* Clip creation
+* Download workflow
+* Settings
+* History
 
----
-
-## ffmpeg
-
-FFmpeg wrapper.
-
-Argument builder.
-
-Progress parser.
+The domain layer must never depend on platform-specific implementations.
 
 ---
 
-## ffprobe
+## platform
 
-Media inspection.
+Responsible for supported video platforms.
 
-Metadata extraction.
+Contains:
 
----
+* Platform detection
+* URL validation
+* Metadata retrieval
+* Stream discovery
+* Media download
 
-## gpu
+Each supported platform implements the same interface.
 
-GPU detection.
+Examples:
 
-Encoder selection.
+```text
+youtube/
+kick/
+```
 
-Capability reporting.
-
----
-
-## history
-
-Export history.
-
-Download history.
-
----
-
-## logger
-
-Logging.
-
-Log formatting.
+Future platforms should be added here.
 
 ---
 
-## settings
+## media
 
-Settings management.
+Responsible for local media operations.
 
-Configuration.
+Contains:
 
-Validation.
+* FFmpeg wrapper
+* FFprobe wrapper
+* GPU detection
+* Media inspection
+* Export pipeline
 
----
-
-## worker
-
-Background jobs.
-
-Progress.
-
-Cancellation.
+The media layer never communicates directly with online platforms.
 
 ---
 
-## event
+## system
 
-Wails Events.
+Responsible for operating system interaction.
 
-Frontend notifications.
+Contains:
+
+* File system
+* Logging
+* Background workers
+
+System services should remain reusable.
 
 ---
 
 ## shared
 
-Reusable backend utilities.
+Small reusable utilities.
 
 Allowed:
 
 * Constants
+* Shared types
 * Small helper functions
-* Shared models
 
 Forbidden:
 
 * Business logic
-* External command execution
+* Platform logic
+* FFmpeg execution
 
 ---
 
 # Frontend Structure
 
-```text id="dfe68v"
+```text
 frontend/
 
 src/
@@ -310,7 +313,7 @@ types/
 utils/
 ```
 
-Keep the frontend shallow.
+The frontend should remain shallow.
 
 Avoid deeply nested folders.
 
@@ -320,17 +323,24 @@ Avoid deeply nested folders.
 
 ## assets
 
-Images.
+Static resources.
 
-Fonts.
-
-Icons.
+* Images
+* Icons
+* Fonts
 
 ---
 
 ## components
 
 Reusable UI components.
+
+Examples:
+
+* Timeline
+* ProgressBar
+* VideoPreview
+* MetadataCard
 
 ---
 
@@ -342,7 +352,7 @@ Examples:
 
 * Event names
 * Default values
-* Route names
+* Theme tokens
 
 ---
 
@@ -350,25 +360,43 @@ Examples:
 
 Reusable React hooks.
 
+Examples:
+
+* useDownload
+* useTimeline
+* useExport
+
 ---
 
 ## layouts
 
-Shared layouts.
+Shared page layouts.
 
 ---
 
 ## pages
 
-Application screens.
+Top-level application pages.
+
+Examples:
+
+* Home
+* Editor
+* History
+* Settings
 
 ---
 
 ## services
 
-Backend communication.
+Frontend communication layer.
 
-Wails bindings.
+Responsible for:
+
+* Wails bindings
+* Backend communication
+
+No business logic.
 
 ---
 
@@ -376,7 +404,13 @@ Wails bindings.
 
 Global UI state.
 
-No business logic.
+Examples:
+
+* Theme
+* Sidebar state
+* Current page
+
+Business state belongs in the backend.
 
 ---
 
@@ -388,7 +422,54 @@ Shared TypeScript types.
 
 ## utils
 
-Small helper functions.
+Small utility functions.
+
+No business logic.
+
+---
+
+# Platform Adapter Structure
+
+Every supported platform should follow the same structure.
+
+Example:
+
+```text
+platform/
+
+adapters/
+
+    youtube/
+
+        adapter.go
+        metadata.go
+        download.go
+
+    kick/
+
+        adapter.go
+        metadata.go
+        download.go
+```
+
+This consistency simplifies future platform additions.
+
+---
+
+# Data Storage Structure
+
+```text
+storage/
+
+cache/
+exports/
+history/
+logs/
+settings/
+temp/
+```
+
+Each directory has a single responsibility.
 
 ---
 
@@ -398,9 +479,9 @@ Before creating a new folder:
 
 Ask:
 
-1. Does an existing folder already fit?
-2. Is the new folder responsible for one domain?
-3. Will it contain multiple files?
+* Does an existing folder already fit?
+* Will the new folder contain multiple related files?
+* Does it represent a new domain?
 
 If the answer is "No", do not create it.
 
@@ -408,186 +489,13 @@ If the answer is "No", do not create it.
 
 # File Creation Rules
 
-Create a new file only when:
+Create new files only when:
 
 * Responsibility changes.
-* File size becomes difficult to maintain.
 * Reuse justifies separation.
+* File size becomes difficult to maintain.
 
-Avoid creating files prematurely.
-
----
-
-# Package Rules
-
-Each package should own one domain.
-
-Good
-
-```text id="hbm2ax"
-clip
-
-download
-
-settings
-```
-
-Avoid
-
-```text id="lfzrj5"
-helpers
-
-common
-
-misc
-
-manager
-```
-
----
-
-# Dependency Rules
-
-Allowed flow
-
-```text id="jlwm5r"
-Frontend
-
-↓
-
-Wails
-
-↓
-
-App
-
-↓
-
-Domain Services
-
-↓
-
-Infrastructure Wrappers
-
-↓
-
-External Tools
-```
-
-Forbidden
-
-```text id="j1cyrq"
-React
-
-↓
-
-FFmpeg
-```
-
-Forbidden
-
-```text id="kaxqgi"
-Download
-
-↓
-
-UI
-```
-
-Dependencies should always point downward.
-
----
-
-# Business Logic
-
-Business logic belongs only in:
-
-```text id="2gnb1x"
-backend/internal/
-```
-
-Never inside:
-
-* React components
-* React hooks
-* Utility functions
-
----
-
-# External Executables
-
-Only the wrappers may execute:
-
-* FFmpeg
-* FFprobe
-* yt-dlp
-
-Never execute external binaries elsewhere.
-
----
-
-# Models
-
-Business models belong to their owning package.
-
-Avoid creating a global models directory.
-
-Example
-
-```text id="o9bnx8"
-clip/
-
-ClipRequest
-
-ClipResult
-```
-
-instead of
-
-```text id="0m5h8u"
-models/
-
-everything.go
-```
-
----
-
-# Configuration Files
-
-Store configuration under:
-
-```text id="6x3dwp"
-storage/
-
-settings.json
-history.json
-```
-
-Future configuration files should remain here.
-
----
-
-# Temporary Files
-
-Use:
-
-```text id="aq9j5u"
-storage/temp/
-```
-
-Temporary files must be cleaned automatically.
-
----
-
-# Export Directory
-
-Default location:
-
-```text id="9ehpt4"
-storage/exports/
-```
-
-Users may configure another output directory.
+Avoid speculative files.
 
 ---
 
@@ -605,7 +513,7 @@ Packages
 
 * singular
 
-Components
+React Components
 
 * PascalCase
 
@@ -613,41 +521,121 @@ Hooks
 
 * useSomething
 
+Interfaces
+
+* Descriptive names
+
+Avoid generic names such as:
+
+* Helper
+* Manager
+* Common
+* UtilsService
+
 ---
 
-# AI Guidelines
+# Dependency Rules
 
-Before creating a file:
+Allowed:
 
-* Check whether an existing location is appropriate.
-* Avoid duplicate responsibilities.
-* Follow the defined structure.
-* Keep packages cohesive.
-* Keep folders domain-oriented.
+```text
+Frontend
 
-Never reorganize the project structure without explicit approval.
+↓
+
+Application
+
+↓
+
+Domain
+
+↓
+
+Platform
+
+↓
+
+Media
+
+↓
+
+System
+```
+
+Dependencies always point downward.
+
+Forbidden:
+
+```text
+Platform
+
+↓
+
+React
+```
+
+Forbidden:
+
+```text
+Media
+
+↓
+
+Platform Adapter
+```
+
+Forbidden:
+
+```text
+System
+
+↓
+
+Domain
+```
+
+Lower layers must never depend on higher layers.
 
 ---
 
 # Future Expansion
 
-If new features require additional folders:
+Adding a new platform should require only:
 
-* Introduce the smallest possible change.
-* Document the new structure.
-* Update this document.
-* Keep the hierarchy simple.
+1. Create a new adapter.
+2. Register it in the Platform Resolver.
 
-Avoid speculative folder creation.
+No changes should be required to:
+
+* Clip
+* Export
+* FFmpeg
+* GPU
+* UI
 
 ---
 
-# Project Philosophy
+# AI Guidelines
 
-A good project structure minimizes the number of decisions developers must make.
+When generating code:
 
-Every file should have an obvious home.
+* Follow the defined directory structure.
+* Reuse existing packages.
+* Keep responsibilities focused.
+* Avoid creating generic folders.
+* Respect architectural boundaries.
+* Keep platform implementations isolated.
 
-If the correct location is unclear, the structure should be improved rather than working around it.
+Never reorganize the project without explicit approval.
 
-Consistency is more valuable than clever organization.
+---
+
+# Project Structure Philosophy
+
+The directory structure reflects the architecture.
+
+Every folder should have an obvious responsibility.
+
+If a file has no obvious location, improve the structure instead of creating a miscellaneous folder.
+
+A predictable structure is more valuable than a clever one.

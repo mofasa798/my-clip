@@ -2,481 +2,393 @@
 
 # Backend Engineering Guide
 
-This document defines the backend implementation guidelines for the project.
+This document defines the backend architecture, responsibilities, and engineering standards.
 
-The backend is responsible for all business logic, system orchestration, and communication with external tools.
+The backend is the heart of the application.
+
+It coordinates workflows, owns all business logic, and manages communication between the Platform Layer, Media Layer, and System Layer.
 
 The frontend must never contain business logic.
 
 ---
 
-# Responsibilities
+# Backend Responsibilities
 
 The backend owns:
 
 * Application lifecycle
 * Business logic
-* Video processing
-* Video downloading
-* Metadata retrieval
-* GPU detection
-* Settings
+* Platform orchestration
+* Download orchestration
+* Media processing
+* GPU selection
+* Settings management
+* History management
 * Logging
-* File operations
+* File management
 * Progress reporting
-* External process execution
-
-The backend should expose a clean API to the frontend through Wails.
 
 ---
 
-# Backend Directory
+# Backend Architecture
 
-```text
-backend/
+```text id="q1xp4r"
+Application
 
-cmd/
-internal/
+↓
 
-app/
-clip/
-download/
-ffmpeg/
-ffprobe/
-gpu/
-history/
-logger/
-settings/
-worker/
-event/
-utils/
+Domain
+
+↓
+
+Platform
+
+↓
+
+Media
+
+↓
+
+System
 ```
 
-Each package should have one responsibility.
+Dependencies always point downward.
 
 ---
 
-# Package Responsibilities
+# Layer Responsibilities
 
-## app
+## Application
 
-Responsible for:
+Coordinates workflows.
 
-* Startup
-* Shutdown
-* Dependency verification
-* Initialization
-* Service registration
+Examples:
+
+* Download workflow
+* Export workflow
+* Settings workflow
+
+The Application layer coordinates services but should contain minimal business rules.
 
 ---
 
-## clip
+## Domain
 
-Responsible for:
+Contains business logic.
+
+Examples:
 
 * Clip creation
-* Export workflow
-* Processing strategy
-* Output validation
+* Export requests
+* Download requests
+* Settings validation
+* History management
+
+The Domain layer must never know which video platform is being used.
 
 ---
 
-## download
+## Platform
 
-Responsible for:
-
-* Metadata retrieval
-* Video downloading
-* Audio downloading
-* Progress reporting
-
----
-
-## ffmpeg
-
-Wrapper around FFmpeg.
+Responsible for supported video providers.
 
 Responsibilities:
 
-* Build command arguments
-* Execute FFmpeg
-* Parse progress
-* Return structured errors
+* Detect platform
+* Validate URL
+* Retrieve metadata
+* Retrieve streams
+* Download media
 
-No other package should directly execute FFmpeg.
+Every provider implements the same interface.
 
----
+Examples:
 
-## ffprobe
+* YouTube
+* Kick
 
-Wrapper around FFprobe.
-
-Responsibilities:
-
-* Metadata
-* Codec information
-* Duration
-* Streams
+The rest of the backend communicates only through the Platform interface.
 
 ---
 
-## gpu
+## Media
 
-Responsible for:
+Responsible for local media operations.
 
-* Detect GPU
-* Detect supported encoders
-* Select preferred encoder
+Examples:
 
----
+* FFmpeg
+* FFprobe
+* GPU detection
+* Export
+* Media inspection
 
-## settings
-
-Responsible for:
-
-* Load settings
-* Save settings
-* Default values
-* Validation
+The Media layer operates only on local files.
 
 ---
 
-## logger
+## System
 
-Responsible for:
+Responsible for operating system interaction.
 
-* File logging
-* Log formatting
-* Log levels
+Examples:
 
-Logging should be centralized.
+* File system
+* Logging
+* Background workers
+* Process execution
 
----
-
-## history
-
-Responsible for:
-
-* Recent downloads
-* Recent exports
-
-Should remain lightweight.
+This layer should contain no business logic.
 
 ---
 
-## worker
+# Suggested Directory Structure
 
-Responsible for:
+```text id="h2wbmz"
+backend/
 
-* Long-running jobs
-* Progress updates
-* Cancellation
+main.go
 
----
+internal/
 
-## event
+    app/
 
-Responsible for:
+    domain/
 
-* Wails Events
-* Progress events
-* UI notifications
+    platform/
 
----
+    media/
 
-## utils
+    system/
 
-Utility functions only.
+    shared/
+```
 
-No business logic.
-
-No external command execution.
+Each package should own one domain.
 
 ---
 
-# Service Design
+# Platform Module
 
-Every service should represent a real business capability.
+The Platform module is responsible for online video providers.
 
-Examples
+Suggested structure:
 
-Good
+```text id="ewzy5u"
+platform/
 
-```text
-DownloadService
+resolver/
+
+adapters/
+
+    youtube/
+
+    kick/
+```
+
+Each adapter should expose identical capabilities.
+
+---
+
+# Domain Services
+
+Examples:
+
+```text id="8zjlwm"
 ClipService
-SettingsService
-GPUService
+
+DownloadService
+
 HistoryService
+
+SettingsService
 ```
 
-Avoid
+Services should describe business capabilities.
 
-```text
+Avoid names such as:
+
+```text id="x9c94n"
 Manager
+
 Helper
+
 Processor
+
 Utility
-Common
 ```
 
 ---
 
-# Service Responsibilities
+# Platform Flow
 
-Each service should own:
-
-* One domain
-* One responsibility
-* One public API
-
-Avoid giant services.
-
----
-
-# Service Communication
-
-Preferred flow
-
-```text
-UI
+```text id="gdjlwm"
+Video URL
 
 ↓
 
-Application Service
+Platform Resolver
 
 ↓
 
-Infrastructure Service
+Platform Adapter
 
 ↓
 
-External Tool
+Video Metadata
+
+↓
+
+Download
 ```
 
-Never allow the UI to bypass services.
+Business services should never communicate directly with platform implementations.
 
 ---
 
-# External Commands
+# Media Flow
 
-Only wrappers may execute:
+```text id="ck8m8r"
+Local Media
+
+↓
+
+FFprobe
+
+↓
+
+Clip Service
+
+↓
+
+FFmpeg
+
+↓
+
+Export
+```
+
+Media processing remains platform-independent.
+
+---
+
+# System Flow
+
+```text id="b9jlwm"
+Media Layer
+
+↓
+
+Filesystem
+
+↓
+
+Process Execution
+
+↓
+
+Operating System
+```
+
+The System layer should expose reusable capabilities.
+
+---
+
+# External Processes
+
+External binaries include:
 
 * FFmpeg
 * FFprobe
 * yt-dlp
 
-Every wrapper should:
+Rules:
 
-* Validate arguments
-* Capture stdout
-* Capture stderr
-* Support Context
-* Return structured errors
+* Execute only through dedicated wrappers.
+* Support context cancellation.
+* Capture stdout and stderr.
+* Return structured errors.
 
----
-
-# Worker Design
-
-Workers are used only for long-running operations.
-
-Examples
-
-* Download
-* Export
-* Thumbnail extraction
-
-Workers should:
-
-* Report progress
-* Support cancellation
-* Return results
-
-No scheduling system is required.
+Never execute external binaries from business services.
 
 ---
 
-# Progress Reporting
+# Dependency Rules
 
-Every long-running task should emit progress events.
+Allowed:
 
-Examples
-
-```text
-Download Started
+```text id="tkjlwm"
+Application
 
 ↓
 
-Progress
+Domain
 
 ↓
 
-Completed
+Platform
+
+↓
+
+Media
+
+↓
+
+System
 ```
 
-or
+Forbidden:
 
-```text
-Export Started
-
-↓
-
-Progress
-
-↓
-
-Completed
-```
-
-Progress should be emitted through Wails Events.
-
----
-
-# Error Handling
-
-Every service should return meaningful errors.
-
-Example
-
-Good
-
-```text
-failed to detect FFmpeg executable
-```
-
-Good
-
-```text
-failed to retrieve video metadata
-```
-
-Avoid
-
-```text
-unknown error
-```
-
----
-
-# Context Usage
-
-Every long-running service should accept:
-
-context.Context
-
-This allows:
-
-* Cancellation
-* Timeout
-* Resource cleanup
-
----
-
-# Configuration
-
-Services should never hardcode:
-
-* Directories
-* Encoders
-* Output paths
-
-Read configuration through the Settings Service.
-
----
-
-# File Operations
-
-All file operations belong in the backend.
-
-Examples
-
-* Create directories
-* Move files
-* Delete temporary files
-* Verify permissions
-
-Never expose filesystem logic to React.
-
----
-
-# Logging
-
-Every important backend event should be logged.
-
-Examples
-
-* Startup
-* Shutdown
-* Dependency detection
-* Download
-* Export
-* Error
-
-Avoid excessive logging.
-
----
-
-# Package Dependencies
-
-Allowed dependency flow
-
-```text
-app
-
-↓
-
-services
-
-↓
-
-wrappers
-
-↓
-
-external executables
-```
-
-Forbidden
-
-```text
-ffmpeg
+```text id="h9rjlwm"
+Platform
 
 ↓
 
 React
 ```
 
-or
+Forbidden:
 
-```text
-download
+```text id="mjlwm3"
+Media
 
 ↓
 
-UI
+Platform
 ```
+
+Forbidden:
+
+```text id="vjlwm4"
+System
+
+↓
+
+Domain
+```
+
+Dependencies must remain acyclic.
 
 ---
 
-# Dependency Injection
+# Service Design
 
-Use constructor injection only.
+Every service should:
 
-Example
+* Own one responsibility
+* Expose a small public API
+* Hide implementation details
+* Return structured errors
 
-```go
-NewDownloadService(...)
-```
-
-Do not introduce a dependency injection framework.
+Avoid large services.
 
 ---
 
-# State
+# State Management
 
-Keep services stateless whenever possible.
+Keep services stateless whenever practical.
 
-Persistent state belongs in:
+Persistent state belongs only in:
 
 * Settings
 * History
@@ -485,88 +397,111 @@ Avoid global variables.
 
 ---
 
-# Models
+# Configuration
 
-Models should represent business entities.
+Configuration should be centralized.
 
-Examples
+Examples:
 
-```text
-VideoMetadata
-ClipRequest
-ExportOptions
-DownloadTask
-Settings
-HistoryEntry
-```
+* Output directory
+* Preferred encoder
+* Theme
+* Download options
 
-Avoid generic names.
+Never hardcode configuration values.
 
 ---
 
-# Event Naming
+# Logging
 
-Prefer descriptive event names.
+Centralize logging.
 
-Examples
+Log meaningful events only.
 
-```text
+Examples:
+
+* Startup
+* Shutdown
+* Platform detection
+* Download started
+* Export completed
+* Errors
+
+Avoid verbose logging.
+
+---
+
+# Event System
+
+The backend emits events through Wails.
+
+Examples:
+
+```text id="kjlwm5"
 download.started
+
 download.progress
+
 download.completed
 
 export.started
+
 export.progress
+
 export.completed
 ```
 
-Avoid:
-
-```text
-update
-change
-done
-```
+The frontend subscribes to these events.
 
 ---
 
 # Validation
 
-Validate input as early as possible.
+Validate as early as possible.
 
-Examples
+Examples:
 
 * URL
-* File path
 * Output directory
-* Clip duration
-* Encoder
+* Timestamp range
+* Export options
+* Encoder availability
 
-Return validation errors immediately.
-
----
-
-# Temporary Files
-
-Temporary files should:
-
-* Be created in a temporary directory
-* Be cleaned automatically
-* Never overwrite user files
+Reject invalid requests before starting long-running operations.
 
 ---
 
-# Resource Management
+# Error Handling
 
-Always:
+Errors should include:
 
-* Close files
-* Release resources
-* Wait for processes
-* Cancel contexts
-* Remove temporary files
+* Context
+* Cause
+* Recovery information (when appropriate)
 
-Resource leaks are unacceptable.
+Avoid generic errors such as:
+
+```text id="sjlwm6"
+unknown error
+```
+
+---
+
+# Background Workers
+
+Workers should be used only for long-running operations.
+
+Examples:
+
+* Download
+* Export
+* Metadata retrieval
+
+Workers should:
+
+* Support cancellation
+* Report progress
+* Return structured results
 
 ---
 
@@ -576,51 +511,48 @@ Optimize for:
 
 * Fast startup
 * Low memory usage
-* Efficient I/O
+* Efficient disk I/O
 * Minimal process spawning
 
-Avoid unnecessary allocations.
+Avoid unnecessary abstractions.
 
 ---
 
-# Testing Strategy
+# Testing
 
-Backend logic should be testable.
+Business logic should be tested independently of external tools.
 
-Separate:
+Mock:
 
-* Business logic
-* External command execution
+* FFmpeg
+* FFprobe
+* yt-dlp
+* Filesystem
 
-Wrappers should isolate system dependencies.
+Do not mock business rules.
 
 ---
 
 # AI Guidelines
 
-When creating backend code:
+When generating backend code:
 
+* Keep layers isolated.
+* Preserve dependency direction.
 * Reuse existing services.
-* Keep packages cohesive.
-* Keep services focused.
-* Keep APIs explicit.
-* Prefer composition over abstraction.
-* Do not create packages without a clear responsibility.
-* Do not execute external binaries outside dedicated wrappers.
-* Follow the dependency flow defined in the architecture.
+* Keep business logic inside the Domain layer.
+* Treat platforms as interchangeable providers.
+* Keep media processing platform-independent.
+* Never execute external tools outside dedicated wrappers.
 
 ---
 
 # Backend Philosophy
 
-The backend is the heart of the application.
+The backend exists to orchestrate workflows, not to expose implementation details.
 
-Its responsibilities are to:
+Platform-specific logic ends at the Platform Layer.
 
-* Coordinate workflows.
-* Execute external tools.
-* Manage application state.
-* Provide reliable business logic.
-* Remain simple, modular, and maintainable.
+From that point forward, the application works exclusively with generic media and business models.
 
-A backend that is easy to understand is more valuable than one that is overly flexible.
+A clean backend is one where replacing a video provider does not affect the rest of the application.
