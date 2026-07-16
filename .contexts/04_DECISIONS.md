@@ -14,7 +14,7 @@ Existing decisions should only change when absolutely necessary.
 
 # ADR-001
 
-## Platform-Agnostic Architecture
+## Source-Agnostic Architecture
 
 Status
 
@@ -22,21 +22,21 @@ Accepted
 
 Decision
 
-The application shall be platform-agnostic.
+The application shall be source-agnostic.
 
-No core service may depend on a specific video platform.
+No core service may depend on a specific video source.
 
-Platform-specific logic must be isolated within the Platform Layer.
+Source-specific logic must be isolated within the Source Layer.
 
 Reason
 
-This allows new platforms to be added without changing business logic.
+This allows new sources to be added without changing business logic.
 
 ---
 
 # ADR-002
 
-## Platform Adapter Pattern
+## Source Adapter Pattern
 
 Status
 
@@ -44,13 +44,13 @@ Accepted
 
 Decision
 
-Every supported platform must implement the same adapter interface.
+Every supported source must implement the same adapter interface.
 
 Examples:
 
 * YouTube
 * Kick
-* Future platforms
+* Future sources
 
 Reason
 
@@ -149,7 +149,7 @@ Application Layer
 
 ↓
 
-Platform Layer
+Source Layer
 
 ↓
 
@@ -178,7 +178,7 @@ Accepted
 
 Decision
 
-After platform resolution, every video shall be represented by the same generic data model.
+After source resolution, every video shall be represented by the same generic data model.
 
 Example:
 
@@ -186,11 +186,11 @@ Example:
 * StreamInfo
 * ClipRequest
 
-Core services must never distinguish between YouTube, Kick, or future platforms.
+Core services must never distinguish between YouTube, Kick, or future sources.
 
 Reason
 
-The application processes media, not platforms.
+The application processes media, not sources.
 
 ---
 
@@ -244,11 +244,11 @@ Decision
 
 The application must never call yt-dlp directly from business services.
 
-Only Platform Adapters may interact with yt-dlp.
+Only Source Adapters may interact with yt-dlp.
 
 Reason
 
-yt-dlp is an implementation detail of supported platforms, not part of the application's business logic.
+yt-dlp is an implementation detail of supported sources, not part of the application's business logic.
 
 ---
 
@@ -308,7 +308,7 @@ Examples:
 
 * clip
 * download
-* platform
+* source
 * settings
 
 Avoid generic packages such as:
@@ -337,7 +337,7 @@ After download completes, all subsequent workflows operate exclusively on local 
 
 Reason
 
-Separating platform access from media processing keeps the architecture modular.
+Separating source access from media processing keeps the architecture modular.
 
 ---
 

@@ -10,11 +10,11 @@ Multi-Platform Video Clipper
 
 # Vision
 
-Build a fast, reliable, and easy-to-use desktop application that allows users to download, preview, clip, and export videos from supported online platforms.
+Build a fast, reliable, and easy-to-use desktop application that allows users to download, preview, clip, and export videos from supported online sources.
 
-The application should provide a consistent user experience regardless of the original video platform.
+The application should provide a consistent user experience regardless of the original video source.
 
-All platform-specific implementations must remain isolated from the core application.
+All source-specific implementations must remain isolated from the core application.
 
 ---
 
@@ -22,7 +22,7 @@ All platform-specific implementations must remain isolated from the core applica
 
 Develop a local-first desktop application capable of:
 
-* Detecting supported video platforms
+* Detecting supported video sources
 * Retrieving video metadata
 * Downloading videos
 * Creating high-quality clips
@@ -37,7 +37,7 @@ The application should prioritize performance, reliability, and simplicity.
 The project follows these principles:
 
 * Multi-platform by design
-* Platform-agnostic architecture
+* Source-agnostic architecture
 * Local-first processing
 * Performance-oriented implementation
 * Simple and maintainable codebase
@@ -46,14 +46,14 @@ The project follows these principles:
 
 ---
 
-# Supported Platforms
+# Supported Sources
 
 Current targets:
 
 * YouTube
 * Kick
 
-Future expansion may include additional platforms through the Platform Adapter layer without requiring changes to the core application.
+Future expansion may include additional sources through the Source Adapter layer without requiring changes to the core application.
 
 ---
 
@@ -64,7 +64,7 @@ Paste Video URL
 
 ↓
 
-Detect Platform
+Detect Source
 
 ↓
 
@@ -95,13 +95,13 @@ Every feature should support this workflow.
 
 ---
 
-# Platform Independence
+# Source Independence
 
-The application should never assume a specific video platform.
+The application should never assume a specific video Source.
 
-After a URL has been resolved by the Platform Layer, every video should be treated as a generic video source.
+After a URL has been resolved by the Source Layer, every video should be treated as a generic video source.
 
-The clipping, exporting, previewing, and processing pipelines must remain completely independent of the originating platform.
+The clipping, exporting, previewing, and processing pipelines must remain completely independent of the originating source.
 
 ---
 
@@ -174,7 +174,7 @@ Application Layer
 
 ↓
 
-Platform Layer
+Source Layer
 
 ↓
 
@@ -187,7 +187,7 @@ System Layer
 
 Each layer has a single responsibility.
 
-Platform-specific logic must never leak into higher layers.
+Source-specific logic must never leak into higher layers.
 
 ---
 
@@ -234,7 +234,7 @@ Excluded:
 
 The project is considered successful when it can:
 
-* Detect supported platforms automatically
+* Detect supported sources automatically
 * Download videos reliably
 * Export clips efficiently
 * Use GPU acceleration when available
@@ -248,9 +248,9 @@ The project is considered successful when it can:
 
 The application should remain easy to extend.
 
-Adding support for a new platform should require implementing a new Platform Adapter without modifying the clipping, processing, or export pipelines.
+Adding support for a new source should require implementing a new Source Adapter without modifying the clipping, processing, or export pipelines.
 
-The core application should remain independent from any individual video platform.
+The core application should remain independent from any individual video source.
 
 ---
 
@@ -260,6 +260,6 @@ This project is not a YouTube clipper.
 
 It is a multi-platform desktop application for clipping online videos.
 
-Platform support is a replaceable implementation detail.
+Source support is a replaceable implementation detail.
 
-The core application should always remain platform-agnostic, modular, and maintainable.
+The core application should always remain source-agnostic, modular, and maintainable.

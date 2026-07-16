@@ -106,7 +106,7 @@ Avoid multi-level navigation.
 Responsibilities:
 
 * Paste video URL
-* Detect supported platform
+* Detect supported Source
 * Display metadata
 * Display thumbnail
 * Select quality

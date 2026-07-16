@@ -6,7 +6,7 @@ This document defines the backend architecture, responsibilities, and engineerin
 
 The backend is the heart of the application.
 
-It coordinates workflows, owns all business logic, and manages communication between the Platform Layer, Media Layer, and System Layer.
+It coordinates workflows, owns all business logic, and manages communication between the Source Layer, Media Layer, and System Layer.
 
 The frontend must never contain business logic.
 
@@ -18,7 +18,7 @@ The backend owns:
 
 * Application lifecycle
 * Business logic
-* Platform orchestration
+* Source orchestration
 * Download orchestration
 * Media processing
 * GPU selection
@@ -41,7 +41,7 @@ Domain
 
 ↓
 
-Platform
+Source
 
 ↓
 
@@ -84,17 +84,17 @@ Examples:
 * Settings validation
 * History management
 
-The Domain layer must never know which video platform is being used.
+The Domain layer must never know which video Source is being used.
 
 ---
 
-## Platform
+## Source
 
 Responsible for supported video providers.
 
 Responsibilities:
 
-* Detect platform
+* Detect Source
 * Validate URL
 * Retrieve metadata
 * Retrieve streams
@@ -107,7 +107,7 @@ Examples:
 * YouTube
 * Kick
 
-The rest of the backend communicates only through the Platform interface.
+The rest of the backend communicates only through the Source interface.
 
 ---
 
@@ -155,7 +155,7 @@ internal/
 
     domain/
 
-    platform/
+    Source/
 
     media/
 
@@ -168,14 +168,14 @@ Each package should own one domain.
 
 ---
 
-# Platform Module
+# Source Module
 
-The Platform module is responsible for online video providers.
+The Source module is responsible for online video providers.
 
 Suggested structure:
 
 ```text id="ewzy5u"
-platform/
+Source/
 
 resolver/
 
@@ -220,18 +220,18 @@ Utility
 
 ---
 
-# Platform Flow
+# Source Flow
 
 ```text id="gdjlwm"
 Video URL
 
 ↓
 
-Platform Resolver
+Source Resolver
 
 ↓
 
-Platform Adapter
+Source Adapter
 
 ↓
 
@@ -242,7 +242,7 @@ Video Metadata
 Download
 ```
 
-Business services should never communicate directly with platform implementations.
+Business services should never communicate directly with Source implementations.
 
 ---
 
@@ -268,7 +268,7 @@ FFmpeg
 Export
 ```
 
-Media processing remains platform-independent.
+Media processing remains Source-independent.
 
 ---
 
@@ -326,7 +326,7 @@ Domain
 
 ↓
 
-Platform
+Source
 
 ↓
 
@@ -340,7 +340,7 @@ System
 Forbidden:
 
 ```text id="h9rjlwm"
-Platform
+Source
 
 ↓
 
@@ -354,7 +354,7 @@ Media
 
 ↓
 
-Platform
+Source
 ```
 
 Forbidden:
@@ -422,7 +422,7 @@ Examples:
 
 * Startup
 * Shutdown
-* Platform detection
+* Source detection
 * Download started
 * Export completed
 * Errors
@@ -541,8 +541,8 @@ When generating backend code:
 * Preserve dependency direction.
 * Reuse existing services.
 * Keep business logic inside the Domain layer.
-* Treat platforms as interchangeable providers.
-* Keep media processing platform-independent.
+* Treat Sources as interchangeable providers.
+* Keep media processing Source-independent.
 * Never execute external tools outside dedicated wrappers.
 
 ---
@@ -551,7 +551,7 @@ When generating backend code:
 
 The backend exists to orchestrate workflows, not to expose implementation details.
 
-Platform-specific logic ends at the Platform Layer.
+Source-specific logic ends at the Source Layer.
 
 From that point forward, the application works exclusively with generic media and business models.
 

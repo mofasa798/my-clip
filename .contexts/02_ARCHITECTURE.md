@@ -6,7 +6,7 @@ This document defines the high-level architecture of the application.
 
 Its purpose is to establish clear responsibilities, dependency boundaries, and communication flow between all major components.
 
-The architecture is designed to be platform-agnostic, modular, and easy to extend.
+The architecture is designed to be source-agnostic, modular, and easy to extend.
 
 ---
 
@@ -14,7 +14,7 @@ The architecture is designed to be platform-agnostic, modular, and easy to exten
 
 The application follows these principles:
 
-* Platform-independent
+* Source-independent
 * Layered architecture
 * Single responsibility
 * Explicit dependencies
@@ -35,7 +35,7 @@ Every layer should have one clear purpose.
               Application Layer
                        │
                        ▼
-               Platform Layer
+               Source Layer
                        │
                        ▼
             Media Processing Layer
@@ -80,23 +80,23 @@ Responsibilities:
 * History management
 * Progress orchestration
 
-The Application Layer coordinates services but does not implement platform-specific behavior.
+The Application Layer coordinates services but does not implement source-specific behavior.
 
 ---
 
-## Platform Layer
+## Source Layer
 
-The Platform Layer isolates every supported video platform.
+The Source Layer isolates every supported video source.
 
 Responsibilities:
 
-* Detect platform
+* Detect source
 * Validate URL
 * Retrieve metadata
 * Retrieve available streams
 * Download media
 
-The rest of the application must never communicate directly with platform implementations.
+The rest of the application must never communicate directly with source implementations.
 
 ---
 
@@ -143,7 +143,7 @@ Application Services
 
 ↓
 
-Platform Services
+Source Services
 
 ↓
 
@@ -162,31 +162,31 @@ Communication must always follow this direction.
 
 ---
 
-# Platform Architecture
+# Source Architecture
 
-The application should support multiple platforms through adapters.
+The application should support multiple sources through adapters.
 
 ```text id="wwb55u"
 Video URL
 
 ↓
 
-Platform Resolver
+Source Resolver
 
 ↓
 
-Platform Adapter
+Source Adapter
 
 ↓
 
 Generic Video Source
 ```
 
-Every supported platform should expose the same capabilities.
+Every supported source should expose the same capabilities.
 
 ---
 
-# Platform Adapter
+# Source Adapter
 
 Each adapter should implement the same interface.
 
@@ -197,7 +197,7 @@ Responsibilities:
 * Stream discovery
 * Download support
 
-Platform adapters should not contain business logic.
+Source adapters should not contain business logic.
 
 ---
 
@@ -210,7 +210,7 @@ Example model:
 ```text id="u4m3ax"
 VideoMetadata
 
-Platform
+Source
 
 Title
 
@@ -238,11 +238,11 @@ Video URL
 
 ↓
 
-Platform Resolver
+Source Resolver
 
 ↓
 
-Platform Adapter
+Source Adapter
 
 ↓
 
@@ -253,7 +253,7 @@ Download Service
 Local Media File
 ```
 
-The Download Service never knows which platform provided the media.
+The Download Service never knows which source provided the media.
 
 ---
 
@@ -299,13 +299,13 @@ GPU Encoding
 CPU Encoding
 ```
 
-The Export Pipeline is completely platform-independent.
+The Export Pipeline is completely source-independent.
 
 ---
 
-# Platform Independence
+# Source Independence
 
-Platform-specific logic ends after download.
+Source-specific logic ends after download.
 
 Everything beyond this point operates on generic local media.
 
@@ -326,7 +326,7 @@ domain/
     history/
     settings/
 
-platform/
+source/
     resolver/
     adapters/
 
@@ -378,7 +378,7 @@ Application Service
 
 ↓
 
-Platform Layer
+Source Layer
 
 ↓
 
@@ -444,7 +444,7 @@ Media
 
 ↓
 
-Platform
+Source
 
 ↓
 
@@ -461,10 +461,10 @@ Every layer should enrich errors with useful context.
 
 # Extension Strategy
 
-Adding a new platform should require only:
+Adding a new source should require only:
 
-1. Creating a new Platform Adapter.
-2. Registering it in the Platform Resolver.
+1. Creating a new Source Adapter.
+2. Registering it in the Source Resolver.
 
 No changes should be required in:
 
@@ -485,7 +485,7 @@ Application
 
 ↓
 
-Platform
+Source
 
 ↓
 
@@ -499,7 +499,7 @@ System
 Forbidden:
 
 ```text id="svf3qv"
-Platform
+Source
 
 ↓
 
@@ -513,7 +513,7 @@ FFmpeg
 
 ↓
 
-Platform Adapter
+Source Adapter
 ```
 
 Lower layers must never depend on higher layers.
@@ -522,7 +522,7 @@ Lower layers must never depend on higher layers.
 
 # Future Expansion
 
-The architecture should support future platforms such as:
+The architecture should support future sources such as:
 
 * Twitch
 * Vimeo
@@ -536,8 +536,8 @@ without requiring changes to the application's core workflows.
 
 When generating architecture-related code:
 
-* Keep platform logic isolated.
-* Keep media processing platform-independent.
+* Keep source logic isolated.
+* Keep media processing source-independent.
 * Prefer explicit interfaces.
 * Avoid unnecessary abstractions.
 * Follow the defined dependency flow.
@@ -547,10 +547,10 @@ When generating architecture-related code:
 
 # Architecture Philosophy
 
-The architecture is centered around **generic video sources**, not individual platforms.
+The architecture is centered around **generic video sources**, not individual sources.
 
-Platforms are interchangeable implementations.
+Sources are interchangeable implementations.
 
 The core application should only understand media, workflows, and user actions.
 
-A new platform should integrate by implementing the Platform Adapter, while the rest of the application remains unchanged.
+A new source should integrate by implementing the Source Adapter, while the rest of the application remains unchanged.

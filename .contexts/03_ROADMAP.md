@@ -37,7 +37,7 @@ Project Foundation
 
 Phase 2
 
-Platform Layer
+Source Layer
 
 ↓
 
@@ -96,16 +96,16 @@ Success Criteria
 
 ---
 
-# Phase 2 — Platform Layer
+# Phase 2 — Source Layer
 
 Objective
 
-Create a platform-independent abstraction for supported video providers.
+Create a source-independent abstraction for supported video providers.
 
 Deliverables
 
-* Platform interface
-* Platform resolver
+* Source interface
+* Source resolver
 * URL detection
 * URL validation
 * Video metadata model
@@ -116,10 +116,10 @@ Deliverables
 
 Success Criteria
 
-* Supported platforms are detected automatically.
+* Supported Sources are detected automatically.
 * Metadata can be retrieved consistently.
-* Platform implementations remain isolated.
-* Core services do not depend on platform-specific logic.
+* Source implementations remain isolated.
+* Core services do not depend on Source-specific logic.
 
 ---
 
@@ -238,7 +238,7 @@ Core Architecture
 
 ↓
 
-Platform Support
+Source Support
 
 ↓
 
@@ -277,7 +277,7 @@ These may be considered only after the core application is mature.
 
 Possible future phases:
 
-* Additional platform adapters
+* Additional source adapters
 * AV1 encoding
 * Hardware decoding
 * Batch processing

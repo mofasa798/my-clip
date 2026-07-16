@@ -15,7 +15,7 @@ Every directory should have a single, well-defined responsibility.
 The project structure should be:
 
 * Domain-oriented
-* Platform-agnostic
+* Source-agnostic
 * Easy to navigate
 * Easy to extend
 * Consistent
@@ -78,7 +78,7 @@ Examples:
 * frontend.md
 * ffmpeg.md
 * gpu.md
-* platform.md
+* Source.md
 * ui.md
 * design_system.md
 
@@ -112,7 +112,7 @@ ffprobe
 yt-dlp
 ```
 
-Platform-specific binaries may be organized into subdirectories.
+Source-specific binaries may be organized into subdirectories.
 
 ---
 
@@ -165,7 +165,7 @@ internal/
         history/
         settings/
 
-    platform/
+    Source/
 
         resolver/
 
@@ -217,23 +217,23 @@ Contains:
 * Settings
 * History
 
-The domain layer must never depend on platform-specific implementations.
+The domain layer must never depend on Source-specific implementations.
 
 ---
 
-## platform
+## Source
 
-Responsible for supported video platforms.
+Responsible for supported video Sources.
 
 Contains:
 
-* Platform detection
+* Source detection
 * URL validation
 * Metadata retrieval
 * Stream discovery
 * Media download
 
-Each supported platform implements the same interface.
+Each supported Source implements the same interface.
 
 Examples:
 
@@ -242,7 +242,7 @@ youtube/
 kick/
 ```
 
-Future platforms should be added here.
+Future Sources should be added here.
 
 ---
 
@@ -258,7 +258,7 @@ Contains:
 * Media inspection
 * Export pipeline
 
-The media layer never communicates directly with online platforms.
+The media layer never communicates directly with online Sources.
 
 ---
 
@@ -289,7 +289,7 @@ Allowed:
 Forbidden:
 
 * Business logic
-* Platform logic
+* Source logic
 * FFmpeg execution
 
 ---
@@ -428,14 +428,14 @@ No business logic.
 
 ---
 
-# Platform Adapter Structure
+# Source Adapter Structure
 
-Every supported platform should follow the same structure.
+Every supported Source should follow the same structure.
 
 Example:
 
 ```text
-platform/
+Source/
 
 adapters/
 
@@ -452,7 +452,7 @@ adapters/
         download.go
 ```
 
-This consistency simplifies future platform additions.
+This consistency simplifies future Source additions.
 
 ---
 
@@ -551,7 +551,7 @@ Domain
 
 ↓
 
-Platform
+Source
 
 ↓
 
@@ -567,7 +567,7 @@ Dependencies always point downward.
 Forbidden:
 
 ```text
-Platform
+Source
 
 ↓
 
@@ -581,7 +581,7 @@ Media
 
 ↓
 
-Platform Adapter
+Source Adapter
 ```
 
 Forbidden:
@@ -600,10 +600,10 @@ Lower layers must never depend on higher layers.
 
 # Future Expansion
 
-Adding a new platform should require only:
+Adding a new Source should require only:
 
 1. Create a new adapter.
-2. Register it in the Platform Resolver.
+2. Register it in the Source Resolver.
 
 No changes should be required to:
 
@@ -624,7 +624,7 @@ When generating code:
 * Keep responsibilities focused.
 * Avoid creating generic folders.
 * Respect architectural boundaries.
-* Keep platform implementations isolated.
+* Keep Source implementations isolated.
 
 Never reorganize the project without explicit approval.
 

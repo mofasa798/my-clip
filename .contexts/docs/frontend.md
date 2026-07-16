@@ -462,7 +462,7 @@ When generating frontend code:
 
 # Frontend Philosophy
 
-The frontend presents workflows, not platform implementations.
+The frontend presents workflows, not Source implementations.
 
 Users interact with videos through a consistent interface, regardless of where the media originated.
 
