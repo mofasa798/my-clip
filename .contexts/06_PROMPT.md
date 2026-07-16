@@ -19,7 +19,7 @@ Before making any code changes, read the project documentation in the following 
 5. 03_ROADMAP.md
 6. 04_DECISIONS.md
 7. 05_SPRINT.md
-7. 06_PROMPT.md
+8. 06_PROMPT.md
 9. 07_CODE_STYLE.md
 10. 08_PROJECT_STRUCTURE.md
 
