@@ -67,3 +67,15 @@ Only encode when necessary.
 Every dependency must have a clear justification.
 
 Prefer built-in Go packages whenever possible.
+
+---
+
+## Documentation Rules
+
+Every piece of information must have a single source of truth.
+
+Do not duplicate documentation across multiple files.
+
+If information belongs to another document, reference it instead of copying it.
+
+---
