@@ -1,4 +1,4 @@
-# AI_CONTEXT.md
+# PROJECT.md
 
 # Project Overview
 
