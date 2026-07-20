@@ -2,328 +2,255 @@
 
 # GPU Acceleration Guide
 
-This document defines how GPU acceleration is detected, selected, and used by the application.
+This document defines the GPU acceleration strategy for the application.
 
-GPU acceleration is an optimization.
+GPU acceleration is an optimization layer within the Media Layer.
 
-The application must continue to function correctly even when no supported GPU is available.
+The application should automatically detect available hardware capabilities and select the most efficient encoding strategy.
 
----
-
-# Objectives
-
-The GPU subsystem should provide:
-
-* Reliable hardware detection
-* Automatic encoder selection
-* Fast export performance
-* Graceful fallback
-* Consistent behavior
+GPU acceleration must never be treated as a hard requirement.
 
 ---
 
-# Target Hardware
+# Purpose
 
-Primary development hardware:
+GPU acceleration exists to:
 
-CPU
+* Reduce export time
+* Lower CPU utilization
+* Improve responsiveness during long-running exports
+* Provide efficient hardware video encoding
 
-* AMD Ryzen 5 PRO 4650G
-
-GPU
-
-* AMD Radeon RX 6600 (8 GB)
-
-Memory
-
-* 16 GB DDR4
-
-The implementation should remain compatible with other hardware whenever practical.
+If hardware acceleration is unavailable, the application must continue operating using software encoding.
 
 ---
 
-# Preferred Encoder
+# Design Principles
 
-Preferred encoder priority:
+GPU support should be:
 
-```text id="3f8qyu"
-h264_amf
+* Capability-driven
+* Vendor-neutral
+* Runtime-detected
+* Automatically selected
+* Transparent to users
 
-↓
-
-hevc_amf
-
-↓
-
-libx264
-```
-
-Use CPU encoding only when hardware encoding is unavailable or fails.
+Business logic must never depend on a specific GPU vendor.
 
 ---
 
-# Detection Strategy
+# Supported Hardware Accelerators
 
-GPU capability should be detected once during application startup.
+The application should support the following FFmpeg hardware encoders:
 
-Detection results should be cached.
+| Vendor | Encoder                |
+| ------ | ---------------------- |
+| NVIDIA | NVENC                  |
+| AMD    | AMF                    |
+| Intel  | Quick Sync Video (QSV) |
 
-Do not probe GPU capabilities before every export.
+Support is determined by runtime capability detection, not by hardware model.
 
 ---
 
-# Detection Flow
+# Hardware Detection
 
-```text id="k2rjma"
-Application Startup
+The application should detect hardware capabilities when it starts.
 
-↓
+Detection should verify:
 
+* FFmpeg availability
+* Supported hardware encoders
+* Supported hardware decoders
+* Available codecs
+* Driver compatibility
+
+Hardware capabilities should be cached for the current session.
+
+---
+
+# Capability Detection Flow
+
+```text
+Application Starts
+        │
+        ▼
 Detect FFmpeg
-
-↓
-
-Query Available Encoders
-
-↓
-
-Detect AMF Support
-
-↓
-
-Store Detection Result
-
-↓
-
-Ready
+        │
+        ▼
+Query Available Hardware Encoders
+        │
+        ▼
+Build Capability Profile
+        │
+        ▼
+Expose Capabilities to Backend
 ```
 
----
-
-# Detection Responsibilities
-
-The GPU module is responsible for:
-
-* Detecting supported hardware encoders
-* Reporting supported codecs
-* Reporting encoder availability
-* Selecting the preferred encoder
-
-It should not execute export jobs.
+The application should never assume a particular GPU is installed.
 
 ---
 
-# Encoder Selection
+# Encoder Selection Strategy
 
-Selection priority:
+Preferred processing order:
 
-1. Stream Copy (if no re-encoding is required)
-2. h264_amf
-3. hevc_amf
-4. libx264
-
-Selection should be automatic.
-
----
-
-# Supported Operations
-
-GPU encoding should be used for:
-
-* Re-encoding
-* Scaling
-* Cropping
-* Subtitle burn-in
-* Codec conversion
-
-GPU encoding is unnecessary for Stream Copy.
-
----
-
-# Hardware Decoding
-
-Hardware decoding is currently out of scope.
-
-Use software decoding unless future requirements justify GPU decoding.
-
----
-
-# Capability Model
-
-Represent detected capabilities with a structured model.
-
-Example fields:
-
-* GPU Available
-* Vendor
-* Device Name
-* Supported Encoders
-* FFmpeg Version
-* AMF Available
-
-Avoid parsing FFmpeg output throughout the application.
-
----
-
-# Startup Verification
-
-During application startup:
-
-Verify:
-
-* FFmpeg exists
-* FFprobe exists
-* yt-dlp exists
-* GPU encoder availability
-
-Report results to the UI.
-
----
-
-# Failure Handling
-
-If GPU detection fails:
-
-* Log the error
-* Disable GPU encoding
-* Continue application startup
-
-Startup should not fail because GPU acceleration is unavailable.
-
----
-
-# Encoder Validation
-
-Before starting an export:
-
-Verify:
-
-* Requested encoder exists
-* Requested encoder is supported
-* FFmpeg can use the encoder
-
-Reject invalid requests early.
-
----
-
-# Fallback Strategy
-
-If GPU encoding fails during export:
-
-```text id="nrxlpn"
-Attempt GPU Encoding
-
-↓
-
-Failure
-
-↓
-
-Log Failure
-
-↓
-
-Switch to CPU Encoding
-
-↓
-
-Continue Export
+```text
+Stream Copy Available
+        │
+        ▼
+Yes
+        │
+        ▼
+Stream Copy
+        │
+        ▼
+No
+        │
+        ▼
+Hardware Encoder Available
+        │
+        ▼
+Yes
+        │
+        ▼
+GPU Encoding
+        │
+        ▼
+No
+        │
+        ▼
+CPU Encoding
 ```
 
-The fallback should happen once.
-
-Do not retry GPU encoding repeatedly.
+This strategy should be followed consistently across all exports.
 
 ---
 
-# User Configuration
+# Encoder Priority
 
-Users may choose:
+When multiple hardware encoders are available, select one based on detected capabilities and user preferences.
 
-* Automatic
-* GPU
-* CPU
-
-Automatic is the default.
-
-If the selected mode is unavailable, explain the reason and use the best available option when appropriate.
+The backend should expose supported encoders to the frontend, allowing users to override the automatic selection if desired.
 
 ---
 
-# Performance Goals
+# Decoder Strategy
 
-Optimize for:
+Hardware decoding may be used when supported.
 
-* Fast startup
-* Low CPU usage
-* Stable export speed
-* Predictable behavior
+Preferred order:
 
-Avoid unnecessary capability checks.
+1. Hardware decoding
+2. Software decoding
+
+Decoder selection should remain transparent to the user.
 
 ---
 
-# Logging
+# Stream Copy
 
-Log meaningful GPU events.
+Whenever possible, prefer Stream Copy.
+
+Advantages:
+
+* Fastest processing
+* No quality loss
+* Minimal CPU usage
+* Minimal GPU usage
+
+If Stream Copy satisfies the export request, re-encoding should be avoided.
+
+---
+
+# CPU Fallback
+
+GPU acceleration is optional.
+
+If hardware encoding fails:
+
+1. Log the failure.
+2. Attempt another supported hardware encoder if available.
+3. Fall back to software encoding.
+
+Export should continue whenever possible.
+
+---
+
+# Runtime Capability Model
+
+Example:
+
+```text
+Capabilities
+
+• Stream Copy
+• NVENC
+• AMF
+• QSV
+• Hardware Decode
+• Software Encode
+```
+
+The backend should expose capabilities through generic models rather than vendor-specific flags.
+
+---
+
+# User Preferences
+
+Users may configure:
+
+* Preferred encoder
+* Automatic encoder selection
+* Enable or disable hardware acceleration
+
+The backend determines whether the requested configuration is supported.
+
+---
+
+# Error Handling
 
 Examples:
 
-* GPU detected
-* AMF encoder available
-* GPU encoding selected
-* GPU encoding failed
-* CPU fallback activated
+Good:
 
-Avoid verbose hardware logging.
+* Hardware encoder unavailable
+* Selected encoder not supported
+* Driver initialization failed
+* Falling back to software encoding
+
+Avoid exposing raw FFmpeg output directly to users.
 
 ---
 
-# Error Messages
+# Performance Guidelines
 
-Provide actionable messages.
+The application should:
 
-Good
-
-```text id="3cv39s"
-AMF encoder is unavailable. Falling back to CPU encoding.
-```
-
-Avoid
-
-```text id="8x4jja"
-GPU error
-```
+* Detect capabilities only once per session
+* Reuse capability information
+* Avoid unnecessary encoder probing
+* Prefer efficient encoding paths
+* Keep the UI responsive during export
 
 ---
 
 # Testing
 
-Verify:
+Unit tests should verify:
 
-* GPU detected
-* GPU unavailable
-* Unsupported encoder
-* GPU fallback
-* Automatic selection
-* Manual GPU selection
-* Manual CPU selection
+* Capability model generation
+* Encoder selection logic
+* Fallback decisions
 
-Each scenario should behave predictably.
+Integration tests should verify:
 
----
+* NVIDIA NVENC
+* AMD AMF
+* Intel QSV
+* Software encoding fallback
 
-# Future Expansion
-
-Potential future support:
-
-* AV1 AMF
-* Hardware decoding
-* Multi-GPU selection
-* Encoder benchmarking
-* User-defined encoder presets
-
-These features should be implemented only when scheduled in the roadmap.
+Tests should validate behavior rather than specific hardware models.
 
 ---
 
@@ -331,20 +258,21 @@ These features should be implemented only when scheduled in the roadmap.
 
 When generating GPU-related code:
 
-* Keep detection isolated.
-* Cache detection results.
-* Do not duplicate encoder checks.
-* Never execute FFmpeg directly from the GPU module.
-* Prefer automatic selection.
-* Preserve graceful fallback behavior.
-* Keep the GPU module independent from UI code.
+* Never assume a specific GPU vendor.
+* Detect capabilities dynamically.
+* Keep vendor-specific logic isolated.
+* Prefer generic capability models.
+* Respect the processing priority:
+
+  * Stream Copy
+  * Hardware Encoding
+  * Software Encoding
+* Always implement graceful fallback behavior.
 
 ---
 
 # GPU Philosophy
 
-GPU acceleration improves performance but is not a requirement for correctness.
+GPU acceleration is a performance optimization, not a dependency.
 
-The application should always prioritize successful exports over forcing hardware acceleration.
-
-Reliable fallback behavior is more valuable than aggressive GPU usage.
+The application should adapt automatically to the capabilities of the host system, providing the fastest reliable export strategy while remaining fully functional on any modern desktop computer.
