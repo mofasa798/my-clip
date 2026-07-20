@@ -76,6 +76,10 @@ func main() {
 		logger.Info("Export service initialized")
 	}
 
+	// Initialize history store
+	historyStore := system.NewHistoryStore()
+	logger.Info("History store initialized")
+
 	// Initialize application
 	appInstance := app.New(app.Options{
 		Logger:         logger,
@@ -86,6 +90,7 @@ func main() {
 		ExportService:  exportSvc,
 		GPUDetector:    gpuDetector,
 		FFmpegWrapper:  ffmpegWrapper,
+		HistoryStore:   historyStore,
 	})
 
 	// Create Wails application
