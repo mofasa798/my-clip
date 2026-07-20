@@ -5,6 +5,10 @@ import (
 	"log"
 
 	"my-clip/internal/app"
+	"my-clip/internal/source/kick"
+	"my-clip/internal/source/registry"
+	"my-clip/internal/source/ytdlp"
+	"my-clip/internal/source/youtube"
 	"my-clip/internal/system"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -30,12 +34,36 @@ func main() {
 	deps := detector.DetectAll()
 	logger.Info("Dependency detection complete")
 
+	// Initialize yt-dlp wrapper
+	yt, err := ytdlp.New()
+	if err != nil {
+		logger.Warn("yt-dlp not available: %v", err)
+	}
+
+	// Initialize source registry and register adapters
+	sourceRegistry := registry.New()
+
+	if yt != nil {
+		ytAdapter, ytErr := youtube.New(yt)
+		if ytErr == nil {
+			sourceRegistry.Register(ytAdapter)
+			logger.Info("YouTube adapter registered")
+		}
+
+		kickAdapter, kickErr := kick.New(yt)
+		if kickErr == nil {
+			sourceRegistry.Register(kickAdapter)
+			logger.Info("Kick adapter registered")
+		}
+	}
+
 	// Initialize application
 	appInstance := app.New(app.Options{
-		Logger:     logger,
-		Config:     cfg,
-		Deps:       deps,
-		Detector:   detector,
+		Logger:         logger,
+		Config:         cfg,
+		Deps:           deps,
+		Detector:       detector,
+		SourceRegistry: sourceRegistry,
 	})
 
 	// Create Wails application

@@ -1,15 +1,22 @@
 package app
 
 import (
+	"context"
+
+	"my-clip/internal/domain"
+	"my-clip/internal/source/download"
+	"my-clip/internal/source/registry"
+	"my-clip/internal/source/resolver"
 	"my-clip/internal/system"
 )
 
 // Options holds the dependencies for the application service.
 type Options struct {
-	Logger   *system.Logger
-	Config   *system.Config
-	Deps     *system.DepResult
-	Detector *system.Detector
+	Logger        *system.Logger
+	Config        *system.Config
+	Deps          *system.DepResult
+	Detector      *system.Detector
+	SourceRegistry *registry.Registry
 }
 
 // App is the main application service exposed to the frontend via Wails bindings.
@@ -18,15 +25,22 @@ type App struct {
 	config   *system.Config
 	deps     *system.DepResult
 	detector *system.Detector
+
+	sourceResolver *resolver.Resolver
+	downloadSvc    *download.Service
 }
 
 // New creates a new App service.
 func New(opts Options) *App {
+	svc := download.New(opts.SourceRegistry, opts.Config.OutputDir)
+
 	return &App{
-		logger:   opts.Logger,
-		config:   opts.Config,
-		deps:     opts.Deps,
-		detector: opts.Detector,
+		logger:         opts.Logger,
+		config:         opts.Config,
+		deps:           opts.Deps,
+		detector:       opts.Detector,
+		sourceResolver: resolver.New(opts.SourceRegistry),
+		downloadSvc:    svc,
 	}
 }
 
@@ -73,4 +87,50 @@ func (a *App) SaveConfig(cfg *system.Config) error {
 	}
 	a.logger.Info("Configuration saved")
 	return nil
+}
+
+// --- Source Layer Methods ---
+
+// SupportedSources returns the list of available video sources.
+func (a *App) SupportedSources() []string {
+	return a.downloadSvc.SupportedSources()
+}
+
+// ResolveSource checks if a URL is supported and returns the source name.
+func (a *App) ResolveSource(url string) (string, error) {
+	return a.downloadSvc.LookupURL(url)
+}
+
+// GetMetadata retrieves video metadata for the given URL.
+func (a *App) GetMetadata(url string) (*domain.VideoMetadata, error) {
+	ctx := context.Background()
+	meta, err := a.downloadSvc.GetMetadata(ctx, url)
+	if err != nil {
+		a.logger.Error("Failed to get metadata: %v", err)
+		return nil, err
+	}
+	a.logger.Info("Metadata retrieved for %s: %s", meta.Source, meta.Title)
+	return meta, nil
+}
+
+// StartDownload begins downloading a video.
+// url: the video URL
+// streamID: the selected stream format ID
+func (a *App) StartDownload(url, streamID string) (*domain.DownloadResult, error) {
+	ctx := context.Background()
+	a.logger.Info("Starting download: %s", url)
+
+	result, err := a.downloadSvc.Download(ctx, url, streamID, a.onDownloadProgress)
+	if err != nil {
+		a.logger.Error("Download failed: %v", err)
+		return nil, err
+	}
+
+	a.logger.Info("Download completed: %s", result.FilePath)
+	return result, nil
+}
+
+// onDownloadProgress is called periodically during download.
+func (a *App) onDownloadProgress(p domain.DownloadProgress) {
+	a.logger.Debug("Download progress: %.1f%%", p.Percentage)
 }
