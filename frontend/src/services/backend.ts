@@ -41,6 +41,7 @@ export const Backend = {
 
   // File
   GetOutputDir:     (): Promise<string>                 => Bindings.App.GetOutputDir() as any,
+  GetClipOutputDir: (): Promise<string>                 => Bindings.App.GetClipOutputDir() as any,
   OpenFolder:       (path: string): Promise<void>       => Bindings.App.OpenFolder(path) as any,
   GetFileInfo:      (path: string): Promise<any>         => Bindings.App.GetFileInfo(path) as any,
   CopyPathToClipboard: (path: string): Promise<void>    => Bindings.App.CopyPathToClipboard(path) as any,

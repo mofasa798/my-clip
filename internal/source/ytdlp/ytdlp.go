@@ -11,7 +11,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,25 +22,38 @@ import (
 	"my-clip/internal/domain"
 )
 
+// jsRuntimeArgs are added to every yt-dlp command to enable
+// JavaScript-based extraction for higher-quality video formats.
+// Without this flag, YouTube falls back to the android_vr client
+// which only returns 360p max.
+var jsRuntimeArgs = []string{"--js-runtimes", "node"}
+
+// ytDlpSearchPaths lists additional directories to search for yt-dlp.
+// The latest version is preferred over the Chocolatey/system one.
+var ytDlpSearchPaths = []string{
+	filepath.Join(os.Getenv("USERPROFILE"), "go", "bin"),
+	filepath.Join(os.Getenv("HOME"), "go", "bin"),
+}
+
 // ytDlpOutput represents the JSON output from yt-dlp --dump-json.
 type ytDlpOutput struct {
-	Title       string `json:"title"`
-	Uploader    string `json:"uploader"`
-	Duration    float64 `json:"duration"`
-	Thumbnail   string `json:"thumbnail"`
-	WebpageURL  string `json:"webpage_url"`
-	Extractor   string `json:"extractor"`
+	Title      string  `json:"title"`
+	Uploader   string  `json:"uploader"`
+	Duration   float64 `json:"duration"`
+	Thumbnail  string  `json:"thumbnail"`
+	WebpageURL string  `json:"webpage_url"`
+	Extractor  string  `json:"extractor"`
 
 	// Requested formats
-	FormatID     string `json:"format_id,omitempty"`
-	Ext          string `json:"ext,omitempty"`
-	Filesize     int64  `json:"filesize,omitempty"`
-	FilesizeApprox int64 `json:"filesize_approx,omitempty"`
-	Width        int    `json:"width,omitempty"`
-	Height       int    `json:"height,omitempty"`
-	VCodec       string `json:"vcodec,omitempty"`
-	ACodec       string `json:"acodec,omitempty"`
-	TBR          float64 `json:"tbr,omitempty"`
+	FormatID       string  `json:"format_id,omitempty"`
+	Ext            string  `json:"ext,omitempty"`
+	Filesize       int64   `json:"filesize,omitempty"`
+	FilesizeApprox int64   `json:"filesize_approx,omitempty"`
+	Width          int     `json:"width,omitempty"`
+	Height         int     `json:"height,omitempty"`
+	VCodec         string  `json:"vcodec,omitempty"`
+	ACodec         string  `json:"acodec,omitempty"`
+	TBR            float64 `json:"tbr,omitempty"`
 
 	// Available formats list
 	Formats []ytDlpFormat `json:"formats,omitempty"`
@@ -67,8 +82,22 @@ type Wrapper struct {
 }
 
 // New creates a new yt-dlp wrapper.
-// It finds yt-dlp in the system PATH.
+// It finds yt-dlp in system PATH or known installation directories.
+// Directories are searched first so a user-installed (latest) copy
+// takes precedence over an older Chocolatey/system one.
 func New() (*Wrapper, error) {
+	// Search known paths first (for user-installed latest version)
+	for _, dir := range ytDlpSearchPaths {
+		binary := filepath.Join(dir, "yt-dlp.exe")
+		if _, err := os.Stat(binary); err == nil {
+			return &Wrapper{binaryPath: binary}, nil
+		}
+		binary = filepath.Join(dir, "yt-dlp")
+		if _, err := os.Stat(binary); err == nil {
+			return &Wrapper{binaryPath: binary}, nil
+		}
+	}
+	// Fall back to PATH lookup
 	path, err := exec.LookPath("yt-dlp")
 	if err != nil {
 		return nil, fmt.Errorf("yt-dlp not found in PATH: %w", err)
@@ -78,12 +107,12 @@ func New() (*Wrapper, error) {
 
 // ExtractMetadata retrieves video metadata from the given URL.
 func (w *Wrapper) ExtractMetadata(ctx context.Context, url string) (*domain.VideoMetadata, error) {
-	cmd := exec.CommandContext(ctx, w.binaryPath,
+	args := append([]string{
 		"--dump-json",
 		"--no-download",
 		"--no-warnings",
-		url,
-	)
+	}, append(jsRuntimeArgs, url)...)
+	cmd := exec.CommandContext(ctx, w.binaryPath, args...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -114,13 +143,12 @@ func (w *Wrapper) ExtractMetadata(ctx context.Context, url string) (*domain.Vide
 // Download downloads a video from the given URL.
 // The progress callback is called periodically with download progress.
 func (w *Wrapper) Download(ctx context.Context, req domain.DownloadRequest, progress func(domain.DownloadProgress)) (*domain.DownloadResult, error) {
-	args := []string{
+	args := append([]string{
 		"--newline",
 		"--no-warnings",
 		"-f", req.StreamID,
-		"-o", fmt.Sprintf("%s/%%(title)s.%%(ext)s", req.OutputDir),
-		req.URL,
-	}
+		"-o", filepath.Join(req.OutputDir, "%(title)s.%(ext)s"),
+	}, append(jsRuntimeArgs, req.URL)...)
 
 	cmd := exec.CommandContext(ctx, w.binaryPath, args...)
 
@@ -148,7 +176,7 @@ func (w *Wrapper) Download(ctx context.Context, req domain.DownloadRequest, prog
 
 	// Build result from request data
 	result := &domain.DownloadResult{
-		FilePath: fmt.Sprintf("%s/%s", req.OutputDir, req.Filename),
+		FilePath: filepath.Join(req.OutputDir, req.Filename),
 	}
 
 	return result, nil
