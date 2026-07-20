@@ -9,6 +9,7 @@ import (
 // Config represents the application configuration.
 type Config struct {
 	OutputDir        string `json:"output_dir"`
+	ClipOutputDir    string `json:"clip_output_dir"`
 	Theme            string `json:"theme"`
 	PreferredEncoder string `json:"preferred_encoder"`
 }
@@ -17,9 +18,11 @@ type Config struct {
 func DefaultConfig() *Config {
 	home, _ := os.UserHomeDir()
 	outputDir := filepath.Join(home, "Videos", "MyClip")
+	clipDir := filepath.Join(home, "Videos", "MyClip", "clips")
 
 	return &Config{
 		OutputDir:        outputDir,
+		ClipOutputDir:    clipDir,
 		Theme:            "dark",
 		PreferredEncoder: "auto",
 	}

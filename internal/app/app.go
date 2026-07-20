@@ -176,7 +176,7 @@ func (a *App) CreateClip(inputFile string, startSeconds, endSeconds float64) err
 		InputFile: inputFile,
 		StartTime: time.Duration(startSeconds * float64(time.Second)),
 		EndTime:   time.Duration(endSeconds * float64(time.Second)),
-		OutputDir: a.config.OutputDir,
+		OutputDir: a.config.ClipOutputDir,
 	}
 
 	return a.exportSvc.CreateClip(req, a.onExportProgress)
@@ -188,12 +188,22 @@ func (a *App) ExportFile(inputFile, encoder, format string) error {
 
 	req := domain.ExportRequest{
 		InputFile: inputFile,
-		OutputDir: a.config.OutputDir,
+		OutputDir: a.config.ClipOutputDir,
 		Encoder:   encoder,
 		Format:    format,
 	}
 
 	return a.exportSvc.Export(req, a.onExportProgress)
+}
+
+// GetOutputDir returns the download output directory.
+func (a *App) GetOutputDir() string {
+	return a.config.OutputDir
+}
+
+// GetClipOutputDir returns the clip/export output directory.
+func (a *App) GetClipOutputDir() string {
+	return a.config.ClipOutputDir
 }
 
 // GetGPUInfo returns GPU encoding capabilities.
@@ -250,11 +260,6 @@ func (a *App) DeletePreset(name string) error {
 }
 
 // --- File Management ---
-
-// GetOutputDir returns the current output directory path.
-func (a *App) GetOutputDir() string {
-	return a.config.OutputDir
-}
 
 // OpenFolder opens the given folder in the file explorer.
 func (a *App) OpenFolder(path string) error {

@@ -4,6 +4,7 @@ import type { HistoryEntry } from "../types"
 
 interface Props {
   onOpenFolder: (path: string) => void
+  revision?: number
 }
 
 function formatBytes(bytes: number): string {
@@ -22,7 +23,7 @@ function formatDate(ts: string): string {
   }
 }
 
-export default function HistoryPage({ onOpenFolder }: Props) {
+export default function HistoryPage({ onOpenFolder, revision = 0 }: Props) {
   const [entries, setEntries] = useState<HistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -60,7 +61,7 @@ export default function HistoryPage({ onOpenFolder }: Props) {
 
   useEffect(() => {
     loadHistory()
-  }, [])
+  }, [revision]) // re-fetch when revision changes
 
   // Filter entries
   const filtered = entries.filter((e, i) => {

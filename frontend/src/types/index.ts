@@ -14,6 +14,7 @@ export interface DepResult {
 
 export interface Config {
   output_dir: string
+  clip_output_dir: string
   theme: string
   preferred_encoder: string
 }
