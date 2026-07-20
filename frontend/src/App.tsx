@@ -144,7 +144,7 @@ export default function App() {
       <footer className={`fixed bottom-0 left-0 right-0 border-t ${footerBg} px-4 py-1.5`}>
         <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-gray-500">
           <span>Ready</span>
-          <span>My Clip v0.3.0</span>
+          <span>My Clip v0.4.0</span>
         </div>
       </footer>
     </div>

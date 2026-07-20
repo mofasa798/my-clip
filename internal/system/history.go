@@ -53,6 +53,23 @@ func (s *HistoryStore) All() ([]domain.HistoryEntry, error) {
 	return result, nil
 }
 
+// Delete removes a single history entry by index (from end).
+func (s *HistoryStore) Delete(index int) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.entries == nil {
+		s.load()
+	}
+
+	if index < 0 || index >= len(s.entries) {
+		return nil
+	}
+
+	s.entries = append(s.entries[:index], s.entries[index+1:]...)
+	return s.save()
+}
+
 // Clear removes all history entries.
 func (s *HistoryStore) Clear() error {
 	s.mu.Lock()
