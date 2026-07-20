@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense, memo } from "react"
+import { Backend } from "./services/backend"
 import type { DepResult, Config } from "./types"
 
 // Lazy-loaded pages for code splitting
@@ -25,10 +26,8 @@ export default function App() {
 
   const loadDeps = async () => {
     try {
-      if (window.GoApp) {
-        const result = await window.GoApp.GetDependencies()
-        setDeps(result)
-      }
+      const result = await Backend.GetDependencies()
+      setDeps(result)
     } catch (err) {
       console.error("Failed to load dependencies:", err)
     }
@@ -36,11 +35,9 @@ export default function App() {
 
   const loadConfig = async () => {
     try {
-      if (window.GoApp) {
-        const cfg = await window.GoApp.GetConfig()
-        setConfig(cfg as unknown as Config)
-        if (cfg.theme) setTheme(cfg.theme)
-      }
+      const cfg = await Backend.GetConfig()
+      setConfig(cfg)
+      if (cfg.theme) setTheme(cfg.theme)
     } catch (err) {
       console.error("Failed to load config:", err)
     }
@@ -48,10 +45,8 @@ export default function App() {
 
   const handleRefreshDeps = async () => {
     try {
-      if (window.GoApp) {
-        const result = await window.GoApp.RefreshDependencies()
-        setDeps(result)
-      }
+      const result = await Backend.RefreshDependencies()
+      setDeps(result)
     } catch (err) {
       console.error("Failed to refresh dependencies:", err)
     }
@@ -59,20 +54,20 @@ export default function App() {
 
   const handleSaveConfig = async (cfg: Config) => {
     try {
-      if (window.GoApp) {
-        await window.GoApp.SaveConfig(cfg as unknown as Record<string, string>)
-        setConfig(cfg)
-        if (cfg.theme) setTheme(cfg.theme)
-      }
+      await Backend.SaveConfig(cfg)
+      setConfig(cfg)
+      if (cfg.theme) setTheme(cfg.theme)
     } catch (err) {
       console.error("Failed to save config:", err)
     }
   }
 
-  const handleOpenFolder = (path: string) => {
-    if (window.GoApp?.OpenFolder) {
+  const handleOpenFolder = async (path: string) => {
+    try {
       const dir = path.substring(0, path.lastIndexOf("\\"))
-      window.GoApp.OpenFolder(dir || path).catch(console.error)
+      await Backend.OpenFolder(dir || path)
+    } catch (err) {
+      console.error(err)
     }
   }
 

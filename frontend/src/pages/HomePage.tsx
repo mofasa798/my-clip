@@ -1,45 +1,7 @@
 import { useState, memo } from "react"
+import { Backend } from "../services/backend"
 import DepStatusPanel from "../components/DepStatusPanel"
-import type { DepResult, VideoMetadata, DownloadResult } from "../types"
-
-declare global {
-  interface Window {
-    GoApp?: {
-      // Core
-      GetVersion(): Promise<string>
-      GetDependencies(): Promise<DepResult>
-      RefreshDependencies(): Promise<DepResult>
-      GetConfig(): Promise<Record<string, string>>
-      SaveConfig(cfg: Record<string, string>): Promise<void>
-      // Source
-      SupportedSources(): Promise<string[]>
-      ResolveSource(url: string): Promise<string>
-      GetMetadata(url: string): Promise<VideoMetadata>
-      StartDownload(url: string, streamId: string): Promise<DownloadResult>
-      ProbeFile(path: string): Promise<any>
-      // Media
-      ExportFile(inputFile: string, encoder: string, format: string): Promise<void>
-      GetGPUInfo(): Promise<any>
-      GetAvailableEncoders(): Promise<any[]>
-      // Presets
-      GetPresets(): Promise<any[]>
-      SavePreset(preset: any): Promise<void>
-      DeletePreset(name: string): Promise<void>
-      // History
-      GetHistory(): Promise<any[]>
-      DeleteHistoryEntry(index: number): Promise<void>
-      ClearHistory(): Promise<void>
-      // File
-      GetOutputDir(): Promise<string>
-      OpenFolder(path: string): Promise<void>
-      GetFileInfo(path: string): Promise<any>
-      CopyPathToClipboard(path: string): Promise<void>
-      // Misc
-      ShowNotification(title: string, message: string): Promise<void>
-      CleanupTemp(dir: string): Promise<void>
-    }
-  }
-}
+import type { DepResult, VideoMetadata } from "../types"
 
 interface Props {
   deps: DepResult | null
@@ -60,10 +22,8 @@ export default memo(function HomePage({ deps, onRefreshDeps, onNavigateEditor }:
   const [supportedSources, setSupportedSources] = useState<string[]>([])
 
   useState(() => {
-    if (window.GoApp) {
-      window.GoApp.GetVersion().then(setVersion).catch(console.error)
-      window.GoApp.SupportedSources().then(setSupportedSources).catch(console.error)
-    }
+    Backend.GetVersion().then(setVersion).catch(console.error)
+    Backend.SupportedSources().then(setSupportedSources).catch(console.error)
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,19 +37,17 @@ export default memo(function HomePage({ deps, onRefreshDeps, onNavigateEditor }:
     setDownloadProgress(0)
 
     try {
-      if (window.GoApp) {
-        const source = await window.GoApp.ResolveSource(url)
-        if (!source) {
-          setError("URL not supported. Supported sources: YouTube (youtube.com, youtu.be), Kick (kick.com)")
-          setLoading(false)
-          return
-        }
-        const meta = await window.GoApp.GetMetadata(url)
-        setMetadata(meta)
-        if (meta.streams.length > 0) {
-          const best = meta.streams.filter(s => s.has_video)[0]
-          if (best) setSelectedStream(best.id)
-        }
+      const source = await Backend.ResolveSource(url)
+      if (!source) {
+        setError("URL not supported. Supported sources: YouTube (youtube.com, youtu.be), Kick (kick.com)")
+        setLoading(false)
+        return
+      }
+      const meta = await Backend.GetMetadata(url)
+      setMetadata(meta)
+      if (meta.streams.length > 0) {
+        const best = meta.streams.filter(s => s.has_video)[0]
+        if (best) setSelectedStream(best.id)
       }
     } catch (err: any) {
       const msg = err?.message || ""
@@ -117,12 +75,10 @@ export default memo(function HomePage({ deps, onRefreshDeps, onNavigateEditor }:
     let lastError = ""
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
-        if (window.GoApp) {
-          const result = await window.GoApp.StartDownload(url, selectedStream)
-          setDownloadProgress(100)
-          setDownloadedFile(result.file_path)
-          return
-        }
+        const result = await Backend.StartDownload(url, selectedStream)
+        setDownloadProgress(100)
+        setDownloadedFile(result.file_path)
+        return
       } catch (err: any) {
         lastError = err?.message || "Download failed."
         if (attempt < 3) {

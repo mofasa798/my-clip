@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Backend } from "../services/backend"
 import type { HistoryEntry } from "../types"
 
 interface Props {
@@ -30,10 +31,8 @@ export default function HistoryPage({ onOpenFolder }: Props) {
   const loadHistory = async () => {
     setLoading(true)
     try {
-      if (window.GoApp?.GetHistory) {
-        const result = await window.GoApp.GetHistory()
-        setEntries(result || [])
-      }
+      const result = await Backend.GetHistory()
+      setEntries(result || [])
     } catch (err) {
       console.error("Failed to load history:", err)
     } finally {
@@ -43,10 +42,8 @@ export default function HistoryPage({ onOpenFolder }: Props) {
 
   const handleClear = async () => {
     try {
-      if (window.GoApp?.ClearHistory) {
-        await window.GoApp.ClearHistory()
-        setEntries([])
-      }
+      await Backend.ClearHistory()
+      setEntries([])
     } catch (err) {
       console.error("Failed to clear history:", err)
     }
@@ -54,10 +51,8 @@ export default function HistoryPage({ onOpenFolder }: Props) {
 
   const handleDelete = async (index: number) => {
     try {
-      if (window.GoApp?.DeleteHistoryEntry) {
-        await window.GoApp.DeleteHistoryEntry(index)
-        setEntries(prev => prev.filter((_, i) => i !== index))
-      }
+      await Backend.DeleteHistoryEntry(index)
+      setEntries(prev => prev.filter((_, i) => i !== index))
     } catch (err) {
       console.error("Failed to delete entry:", err)
     }

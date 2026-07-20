@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, memo } from "react"
+import { Backend } from "../services/backend"
 import type { ExportPreset } from "../types"
 
 interface Props {
@@ -34,23 +35,18 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
     setExportError("")
     setExportProgress(0)
 
-    // Simulate progress while waiting for backend
     const progressTimer = setInterval(() => {
       setExportProgress(prev => Math.min(prev + 5, 90))
     }, 800)
 
     try {
-      if (window.GoApp?.ExportFile) {
-        await window.GoApp.ExportFile(videoPath, encoder, "mp4")
-        setExportProgress(100)
-        setExportDone(true)
-        showNotif("✓ Export completed!")
-        window.GoApp?.ShowNotification?.("My Clip", "Export completed successfully!").catch(() => {})
-        if (window.GoApp?.GetOutputDir) {
-          const dir = await window.GoApp.GetOutputDir()
-          window.GoApp.OpenFolder(dir).catch(() => {})
-        }
-      }
+      await Backend.ExportFile(videoPath, encoder, "mp4")
+      setExportProgress(100)
+      setExportDone(true)
+      showNotif("✓ Export completed!")
+      Backend.ShowNotification("My Clip", "Export completed successfully!").catch(() => {})
+      const dir = await Backend.GetOutputDir()
+      Backend.OpenFolder(dir).catch(() => {})
     } catch (err: any) {
       const msg = err?.message || "Export failed. Check that FFmpeg is available and the file is valid."
       setExportError(msg)
@@ -64,12 +60,10 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
   // Keyboard shortcuts
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!videoRef.current) return
-
     switch (e.code) {
       case "Space":
         e.preventDefault()
-        if (videoRef.current.paused) videoRef.current.play()
-        else videoRef.current.pause()
+        videoRef.current.paused ? videoRef.current.play() : videoRef.current.pause()
         break
       case "KeyI":
         e.preventDefault()
@@ -80,14 +74,10 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
         setEndTime(videoRef.current.currentTime)
         break
       case "Enter":
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault()
-          handleExport()
-        }
+        if (e.ctrlKey || e.metaKey) { e.preventDefault(); handleExport() }
         break
       case "Escape":
-        if (exporting) return
-        onBack()
+        if (exporting) return; onBack()
         break
     }
   }, [startTime, endTime, exporting, handleExport, onBack])
@@ -97,10 +87,8 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [handleKeyDown])
 
-  // Load presets and encoders on mount
-  useEffect(() => {
-    window.GoApp?.GetPresets?.().then(setPresets).catch(console.error)
-  }, [])
+  // Load presets on mount
+  useEffect(() => { Backend.GetPresets().then(setPresets).catch(console.error) }, [])
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
@@ -118,23 +106,17 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
   const handlePresetChange = (name: string) => {
     setActivePreset(name)
     const preset = presets.find(p => p.name === name)
-    if (preset) {
-      setEncoder(preset.encoder === "auto" ? "auto" : preset.encoder)
-    }
+    if (preset) setEncoder(preset.encoder === "auto" ? "auto" : preset.encoder)
   }
 
   const handleCopyPath = async () => {
-    if (window.GoApp?.CopyPathToClipboard) {
-      await window.GoApp.CopyPathToClipboard(videoPath)
-      showNotif("📋 Path copied to clipboard!")
-    }
+    await Backend.CopyPathToClipboard(videoPath)
+    showNotif("📋 Path copied to clipboard!")
   }
 
   const handleOpenFolder = async () => {
-    if (window.GoApp?.GetOutputDir) {
-      const dir = await window.GoApp.GetOutputDir()
-      window.GoApp.OpenFolder(dir).catch(() => {})
-    }
+    const dir = await Backend.GetOutputDir()
+    Backend.OpenFolder(dir).catch(() => {})
   }
 
   const formatTime = (s: number) => {

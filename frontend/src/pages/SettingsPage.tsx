@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { Backend } from "../services/backend"
 import type { Config, DepResult, GPUInfo, EncoderOption } from "../types"
 
 interface Props {
@@ -15,19 +16,17 @@ export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Pr
   const [gpuInfo, setGpuInfo] = useState<GPUInfo | null>(null)
   const [encoders, setEncoders] = useState<EncoderOption[]>([])
 
-  useEffect(() => {
-    if (config) {
+  useEffect(() => { if (config) {
       setOutputDir(config.output_dir)
       setTheme(config.theme)
       setEncoder(config.preferred_encoder)
-    }
-    if (window.GoApp?.GetGPUInfo) {
-      window.GoApp.GetGPUInfo().then(setGpuInfo).catch(console.error)
-    }
-    if (window.GoApp?.GetAvailableEncoders) {
-      window.GoApp.GetAvailableEncoders().then(setEncoders).catch(console.error)
-    }
-  }, [config])
+  } }, [config])
+
+  // Fetch GPU info and encoders once on mount
+  useEffect(() => {
+    Backend.GetGPUInfo().then(setGpuInfo).catch(console.error)
+    Backend.GetAvailableEncoders().then(setEncoders).catch(console.error)
+  }, [])
 
   const handleSave = () => {
     onSave({ output_dir: outputDir, theme, preferred_encoder: encoder })
@@ -48,8 +47,17 @@ export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Pr
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">General</h2>
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-300">Output Directory</label>
-          <input type="text" value={outputDir} onChange={(e) => setOutputDir(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" />
+          <div className="flex gap-2">
+            <input type="text" value={outputDir} onChange={(e) => setOutputDir(e.target.value)}
+              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" />
+            <button onClick={async () => {
+              const dir = await Backend.GetOutputDir().catch(() => "")
+              if (dir) Backend.OpenFolder(dir).catch(() => {})
+            }}
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors shrink-0">
+              Browse
+            </button>
+          </div>
         </div>
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-300">Theme</label>
