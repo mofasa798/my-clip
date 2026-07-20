@@ -54,3 +54,37 @@ export interface DownloadResult {
   duration: number
   format: string
 }
+
+export interface ExportProgress {
+  percentage: number
+  fps: number
+  speed: string
+  eta: string
+}
+
+export interface EncoderOption {
+  name: string
+  value: string
+  available: boolean
+}
+
+export interface GPUInfo {
+  stream_copy: boolean
+  encoders: EncoderOption[]
+  preferred: string
+  gpu_vendor: string
+  gpu_available: boolean
+}
+
+export interface HistoryEntry {
+  id: string
+  type: "download" | "export"
+  title: string
+  source: string
+  file_path: string
+  file_size: number
+  duration: number
+  timestamp: string
+  status: string
+  error?: string
+}

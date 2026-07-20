@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"os/exec"
 	"time"
 
 	"my-clip/internal/domain"
@@ -25,6 +28,7 @@ type Options struct {
 	ExportService  *export.Service
 	GPUDetector    *gpu.Detector
 	FFmpegWrapper  *ffmpeg.Wrapper
+	HistoryStore   *system.HistoryStore
 }
 
 // App is the main application service exposed to the frontend via Wails bindings.
@@ -39,6 +43,7 @@ type App struct {
 	exportSvc      *export.Service
 	gpuDetector    *gpu.Detector
 	ffmpeg         *ffmpeg.Wrapper
+	history        *system.HistoryStore
 }
 
 // New creates a new App service.
@@ -55,6 +60,7 @@ func New(opts Options) *App {
 		exportSvc:      opts.ExportService,
 		gpuDetector:    opts.GPUDetector,
 		ffmpeg:         opts.FFmpegWrapper,
+		history:        opts.HistoryStore,
 	}
 }
 
@@ -199,4 +205,49 @@ func (a *App) GetAvailableEncoders() []domain.EncoderOption {
 
 func (a *App) onExportProgress(p domain.ExportProgress) {
 	a.logger.Debug("Export progress: %.1f%% (%.1f fps, %s)", p.Percentage, p.FPS, p.Speed)
+}
+
+// --- History Methods ---
+
+// GetHistory returns all download and export history entries.
+func (a *App) GetHistory() ([]domain.HistoryEntry, error) {
+	entries, err := a.history.All()
+	if err != nil {
+		a.logger.Error("Failed to load history: %v", err)
+		return nil, err
+	}
+	return entries, nil
+}
+
+// ClearHistory removes all history entries.
+func (a *App) ClearHistory() error {
+	return a.history.Clear()
+}
+
+// --- File Management ---
+
+// GetOutputDir returns the current output directory path.
+func (a *App) GetOutputDir() string {
+	return a.config.OutputDir
+}
+
+// OpenFolder opens the given folder in the file explorer.
+func (a *App) OpenFolder(path string) error {
+	a.logger.Info("Opening folder: %s", path)
+	cmd := exec.Command("explorer", path)
+	return cmd.Start()
+}
+
+// GetFileInfo returns information about a local file.
+func (a *App) GetFileInfo(path string) (map[string]interface{}, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("file not found: %s", path)
+	}
+
+	return map[string]interface{}{
+		"name":  info.Name(),
+		"size":  info.Size(),
+		"is_dir": info.IsDir(),
+	}, nil
 }
