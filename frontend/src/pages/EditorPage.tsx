@@ -21,7 +21,39 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
   const [activePreset, setActivePreset] = useState("")
   const [notification, setNotification] = useState("")
 
-  // Keyboard shortcuts
+  const showNotif = (msg: string) => {
+    setNotification(msg)
+    setTimeout(() => setNotification(""), 4000)
+  }
+
+  const handleExport = async () => {
+    setExporting(true)
+    setExportDone(false)
+    setExportError("")
+    setExportProgress(0)
+    try {
+      if (window.GoApp?.ExportFile) {
+        await window.GoApp.ExportFile(videoPath, encoder, "mp4")
+        setExportDone(true)
+        showNotif("✓ Export completed!")
+        if (window.GoApp?.ShowNotification) {
+          window.GoApp.ShowNotification("My Clip", "Export completed successfully!").catch(() => {})
+        }
+        if (window.GoApp?.GetOutputDir) {
+          const dir = await window.GoApp.GetOutputDir()
+          window.GoApp.OpenFolder(dir).catch(() => {})
+        }
+      }
+    } catch (err: any) {
+      const msg = err?.message || "Export failed. Check that FFmpeg is available and the file is valid."
+      setExportError(msg)
+      showNotif("✗ " + msg)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  // Keyboard shortcuts — must be defined after handleExport
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!videoRef.current) return
 
@@ -50,7 +82,7 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
         onBack()
         break
     }
-  }, [startTime, endTime, exporting])
+  }, [startTime, endTime, exporting, handleExport, onBack])
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown)
@@ -64,11 +96,6 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
     }
   }, [])
 
-  const showNotif = (msg: string) => {
-    setNotification(msg)
-    setTimeout(() => setNotification(""), 4000)
-  }
-
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration)
@@ -80,34 +107,6 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
     if (!videoRef.current) return
     videoRef.current.currentTime = startTime
     videoRef.current.play()
-  }
-
-  const handleExport = async () => {
-    setExporting(true)
-    setExportDone(false)
-    setExportError("")
-    setExportProgress(0)
-    try {
-      if (window.GoApp?.ExportFile) {
-        await window.GoApp.ExportFile(videoPath, encoder, "mp4")
-        setExportDone(true)
-        showNotif("✓ Export completed!")
-        if (window.GoApp?.ShowNotification) {
-          window.GoApp.ShowNotification("My Clip", "Export completed successfully!").catch(() => {})
-        }
-        // Open output folder after export
-        if (window.GoApp?.GetOutputDir) {
-          const dir = await window.GoApp.GetOutputDir()
-          window.GoApp.OpenFolder(dir).catch(() => {})
-        }
-      }
-    } catch (err: any) {
-      const msg = err?.message || "Export failed. Check that FFmpeg is available and the file is valid."
-      setExportError(msg)
-      showNotif("✗ " + msg)
-    } finally {
-      setExporting(false)
-    }
   }
 
   const handlePresetChange = (name: string) => {

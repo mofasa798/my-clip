@@ -15,19 +15,19 @@ export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Pr
   const [gpuInfo, setGpuInfo] = useState<GPUInfo | null>(null)
   const [encoders, setEncoders] = useState<EncoderOption[]>([])
 
+  // Load config values when config changes
   useEffect(() => {
-    if (config) {
-      setOutputDir(config.output_dir)
-      setTheme(config.theme)
-      setEncoder(config.preferred_encoder)
-    }
-    if (window.GoApp?.GetGPUInfo) {
-      window.GoApp.GetGPUInfo().then(setGpuInfo).catch(console.error)
-    }
-    if (window.GoApp?.GetAvailableEncoders) {
-      window.GoApp.GetAvailableEncoders().then(setEncoders).catch(console.error)
-    }
+    if (!config) return
+    setOutputDir(config.output_dir)
+    setTheme(config.theme)
+    setEncoder(config.preferred_encoder)
   }, [config])
+
+  // Fetch GPU info and encoders once on mount
+  useEffect(() => {
+    window.GoApp?.GetGPUInfo?.().then(setGpuInfo).catch(console.error)
+    window.GoApp?.GetAvailableEncoders?.().then(setEncoders).catch(console.error)
+  }, [])
 
   const handleSave = () => {
     onSave({ output_dir: outputDir, theme, preferred_encoder: encoder })
@@ -92,11 +92,11 @@ export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Pr
               <span className="text-gray-400">{gpuInfo.preferred}</span>
             </div>
             <div className="text-xs text-gray-500 space-y-1 pt-1">
-              {gpuInfo.encoders.map((enc: any) => (
+              {(gpuInfo.encoders as Array<{ name: string; available: boolean; vendor: string }>).map((enc) => (
                 <div key={enc.name} className="flex items-center gap-2">
                   <span className={`w-1.5 h-1.5 rounded-full ${enc.available ? "bg-green-500" : "bg-gray-600"}`} />
                   <span>{enc.name}</span>
-                  <span className="text-gray-600">{enc.vendor}</span>
+                  {enc.vendor && <span className="text-gray-600">{enc.vendor}</span>}
                 </div>
               ))}
             </div>
