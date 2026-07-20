@@ -6,15 +6,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-)
 
-// Known FFmpeg installation paths to search on Windows.
-var ffmpegSearchPaths = []string{
-	`C:\ffmpeg-8.0.1\ffmpeg-2026-01-26-git-fe0813d6e2-full_build\bin`,
-	`C:\ffmpeg\bin`,
-	`C:\Program Files\ffmpeg\bin`,
-	`C:\Program Files (x86)\ffmpeg\bin`,
-}
+	"my-clip/internal/shared"
+)
 
 // DepStatus represents the status of a dependency.
 type DepStatus struct {
@@ -64,7 +58,7 @@ func (d *Detector) detectBinary(name string, args ...string) DepStatus {
 	if filepath.Ext(name) == "" {
 		binaryName = name + ".exe"
 	}
-	for _, dir := range ffmpegSearchPaths {
+	for _, dir := range shared.FFmpegSearchPaths {
 		fullPath := filepath.Join(dir, binaryName)
 		if _, err := os.Stat(fullPath); err == nil {
 			return d.runBinary(fullPath, name, args...)
@@ -132,7 +126,7 @@ func (d *Detector) findBinary(name string) (string, error) {
 	if filepath.Ext(name) == "" {
 		binaryName = name + ".exe"
 	}
-	for _, dir := range ffmpegSearchPaths {
+	for _, dir := range shared.FFmpegSearchPaths {
 		fullPath := filepath.Join(dir, binaryName)
 		if _, err := os.Stat(fullPath); err == nil {
 			return fullPath, nil

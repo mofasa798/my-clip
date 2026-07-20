@@ -1,7 +1,17 @@
 import { useState, memo } from "react"
 import { Backend } from "../services/backend"
 import DepStatusPanel from "../components/DepStatusPanel"
-import type { DepResult, VideoMetadata } from "../types"
+import type { DepResult, VideoMetadata, StreamInfo } from "../types"
+
+// Parse quality height from quality/resolution string (e.g. "1080p", "720p", "1920x1080")
+function parseQuality(s: StreamInfo): number {
+  const match = s.quality?.match(/(\d+)\s*p/i) || s.resolution?.match(/^\d+x(\d+)/)
+  if (match) return parseInt(match[1], 10)
+  // Fallback: try to extract any number from the resolution
+  const nums = (s.resolution || "").match(/\d+/g)
+  if (nums && nums.length >= 2) return parseInt(nums[1], 10)
+  return 0
+}
 
 interface Props {
   deps: DepResult | null
@@ -44,6 +54,8 @@ export default memo(function HomePage({ deps, onRefreshDeps, onNavigateEditor }:
         return
       }
       const meta = await Backend.GetMetadata(url)
+      // Sort streams by quality descending (best first)
+      meta.streams.sort((a, b) => parseQuality(b) - parseQuality(a))
       setMetadata(meta)
       if (meta.streams.length > 0) {
         const best = meta.streams.filter(s => s.has_video)[0]
