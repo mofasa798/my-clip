@@ -88,3 +88,12 @@ export interface HistoryEntry {
   status: string
   error?: string
 }
+
+export interface ExportPreset {
+  name: string
+  encoder: string
+  format: string
+  width: number
+  height: number
+  bitrate: string
+}

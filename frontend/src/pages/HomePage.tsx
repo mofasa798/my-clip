@@ -59,7 +59,7 @@ export default function HomePage({ deps, onRefreshDeps, onNavigateEditor }: Prop
       if (window.GoApp) {
         const source = await window.GoApp.ResolveSource(url)
         if (!source) {
-          setError("URL not supported. Try a YouTube or Kick link.")
+          setError("URL not supported. Supported sources: YouTube (youtube.com, youtu.be), Kick (kick.com)")
           setLoading(false)
           return
         }
@@ -71,7 +71,16 @@ export default function HomePage({ deps, onRefreshDeps, onNavigateEditor }: Prop
         }
       }
     } catch (err: any) {
-      setError(err?.message || "Failed to load video.")
+      const msg = err?.message || ""
+      if (msg.includes("no video") || msg.includes("video unavailable")) {
+        setError("Video unavailable. It may be private, age-restricted, or removed.")
+      } else if (msg.includes("find in PATH") || msg.includes("yt-dlp")) {
+        setError("yt-dlp is not installed or not found in PATH. Please install yt-dlp and try again.")
+      } else if (msg.includes("network") || msg.includes("timeout") || msg.includes("connection")) {
+        setError("Network error. Check your internet connection and try again.")
+      } else {
+        setError(`Failed to load video: ${msg}`)
+      }
     } finally {
       setLoading(false)
     }
@@ -83,17 +92,24 @@ export default function HomePage({ deps, onRefreshDeps, onNavigateEditor }: Prop
     setDownloadProgress(0)
     setError("")
 
-    try {
-      if (window.GoApp) {
-        const result = await window.GoApp.StartDownload(url, selectedStream)
-        setDownloadProgress(100)
-        setDownloadedFile(result.file_path)
+    // Retry logic: up to 3 attempts
+    let lastError = ""
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        if (window.GoApp) {
+          const result = await window.GoApp.StartDownload(url, selectedStream)
+          setDownloadProgress(100)
+          setDownloadedFile(result.file_path)
+          return
+        }
+      } catch (err: any) {
+        lastError = err?.message || "Download failed."
+        if (attempt < 3) {
+          await new Promise(r => setTimeout(r, 2000 * attempt))
+        }
       }
-    } catch (err: any) {
-      setError(err?.message || "Download failed.")
-    } finally {
-      setDownloading(false)
     }
+    setError(`Download failed after 3 attempts: ${lastError}`)
   }
 
   const formatDuration = (seconds: number): string => {

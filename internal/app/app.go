@@ -29,6 +29,7 @@ type Options struct {
 	GPUDetector    *gpu.Detector
 	FFmpegWrapper  *ffmpeg.Wrapper
 	HistoryStore   *system.HistoryStore
+	PresetStore    *system.PresetStore
 }
 
 // App is the main application service exposed to the frontend via Wails bindings.
@@ -44,6 +45,7 @@ type App struct {
 	gpuDetector    *gpu.Detector
 	ffmpeg         *ffmpeg.Wrapper
 	history        *system.HistoryStore
+	presets        *system.PresetStore
 }
 
 // New creates a new App service.
@@ -61,6 +63,7 @@ func New(opts Options) *App {
 		gpuDetector:    opts.GPUDetector,
 		ffmpeg:         opts.FFmpegWrapper,
 		history:        opts.HistoryStore,
+		presets:        opts.PresetStore,
 	}
 }
 
@@ -78,7 +81,7 @@ func (a *App) Shutdown() error {
 
 // GetVersion returns the current application version.
 func (a *App) GetVersion() string {
-	return "0.2.0"
+	return "0.4.0"
 }
 
 // GetDependencies returns the current dependency detection results.
@@ -219,9 +222,31 @@ func (a *App) GetHistory() ([]domain.HistoryEntry, error) {
 	return entries, nil
 }
 
+// DeleteHistoryEntry removes a single history entry by index.
+func (a *App) DeleteHistoryEntry(index int) error {
+	return a.history.Delete(index)
+}
+
 // ClearHistory removes all history entries.
 func (a *App) ClearHistory() error {
 	return a.history.Clear()
+}
+
+// --- Export Presets ---
+
+// GetPresets returns all export presets (defaults + custom).
+func (a *App) GetPresets() []domain.ExportPreset {
+	return a.presets.Load()
+}
+
+// SavePreset saves a custom export preset.
+func (a *App) SavePreset(preset domain.ExportPreset) error {
+	return a.presets.SaveCustom(preset)
+}
+
+// DeletePreset removes a custom preset by name.
+func (a *App) DeletePreset(name string) error {
+	return a.presets.DeleteCustom(name)
 }
 
 // --- File Management ---
@@ -246,8 +271,41 @@ func (a *App) GetFileInfo(path string) (map[string]interface{}, error) {
 	}
 
 	return map[string]interface{}{
-		"name":  info.Name(),
-		"size":  info.Size(),
+		"name":   info.Name(),
+		"size":   info.Size(),
 		"is_dir": info.IsDir(),
 	}, nil
+}
+
+// CopyPathToClipboard copies the given path to the clipboard.
+// On Windows, uses a small PowerShell command.
+func (a *App) CopyPathToClipboard(path string) error {
+	cmd := exec.Command("powershell", "-command", "Set-Clipboard", path)
+	return cmd.Run()
+}
+
+// ShowNotification displays a system notification.
+func (a *App) ShowNotification(title, message string) error {
+	a.logger.Info("Notification: %s - %s", title, message)
+	// Use PowerShell for Windows notifications
+	cmd := exec.Command("powershell", "-command",
+		`New-BurntToastNotification -Text '`+title+`','`+message+`' -AppLogo C:\Windows\win.ico`)
+	// Ignore errors if BurntToast is not installed; log instead
+	_ = cmd.Run()
+	return nil
+}
+
+// CleanupTemp removes temporary files from the given directory.
+func (a *App) CleanupTemp(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			os.Remove(dir + "/" + e.Name())
+		}
+	}
+	a.logger.Info("Cleaned up temp directory: %s", dir)
+	return nil
 }

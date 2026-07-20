@@ -80,6 +80,10 @@ func main() {
 	historyStore := system.NewHistoryStore()
 	logger.Info("History store initialized")
 
+	// Initialize preset store
+	presetStore := system.NewPresetStore()
+	logger.Info("Preset store initialized")
+
 	// Initialize application
 	appInstance := app.New(app.Options{
 		Logger:         logger,
@@ -91,6 +95,7 @@ func main() {
 		GPUDetector:    gpuDetector,
 		FFmpegWrapper:  ffmpegWrapper,
 		HistoryStore:   historyStore,
+		PresetStore:    presetStore,
 	})
 
 	// Create Wails application
