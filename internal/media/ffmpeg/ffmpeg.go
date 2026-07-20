@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -18,6 +19,32 @@ import (
 
 	"my-clip/internal/domain"
 )
+
+// Known FFmpeg installation paths on Windows.
+var searchPaths = []string{
+	`C:\ffmpeg-8.0.1\ffmpeg-2026-01-26-git-fe0813d6e2-full_build\bin`,
+	`C:\ffmpeg\bin`,
+	`C:\Program Files\ffmpeg\bin`,
+	`C:\Program Files (x86)\ffmpeg\bin`,
+}
+
+// findBinary locates a binary by PATH then known directories.
+func findBinary(name string) (string, error) {
+	if path, err := exec.LookPath(name); err == nil {
+		return path, nil
+	}
+	binary := name
+	if filepath.Ext(name) == "" {
+		binary = name + ".exe"
+	}
+	for _, dir := range searchPaths {
+		fullPath := filepath.Join(dir, binary)
+		if _, err := os.Stat(fullPath); err == nil {
+			return fullPath, nil
+		}
+	}
+	return "", fmt.Errorf("%s not found", name)
+}
 
 // progressRegex matches FFmpeg progress output:
 // frame=  123 fps= 30 q=28.0 size=    1024kB time=00:00:10.50 bitrate= 800.0kbits/s speed=1.00x
@@ -35,7 +62,7 @@ type Wrapper struct {
 
 // New creates a new FFmpeg wrapper.
 func New() (*Wrapper, error) {
-	path, err := exec.LookPath("ffmpeg")
+	path, err := findBinary("ffmpeg")
 	if err != nil {
 		return nil, fmt.Errorf("ffmpeg not found: %w", err)
 	}
