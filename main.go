@@ -5,6 +5,9 @@ import (
 	"log"
 
 	"my-clip/internal/app"
+	"my-clip/internal/media/export"
+	"my-clip/internal/media/ffmpeg"
+	"my-clip/internal/media/gpu"
 	"my-clip/internal/source/kick"
 	"my-clip/internal/source/registry"
 	"my-clip/internal/source/ytdlp"
@@ -57,6 +60,22 @@ func main() {
 		}
 	}
 
+	// Initialize media layer
+	gpuDetector := gpu.New()
+	gpuCaps := gpuDetector.Detect()
+	logger.Info("GPU detection complete: available=%v, preferred=%s", gpuCaps.GPUAvailable, gpuCaps.Preferred)
+
+	ffmpegWrapper, fwErr := ffmpeg.New()
+	if fwErr != nil {
+		logger.Warn("ffmpeg not available: %v", fwErr)
+	}
+
+	var exportSvc *export.Service
+	if ffmpegWrapper != nil {
+		exportSvc = export.New(ffmpegWrapper, gpuDetector, cfg.OutputDir)
+		logger.Info("Export service initialized")
+	}
+
 	// Initialize application
 	appInstance := app.New(app.Options{
 		Logger:         logger,
@@ -64,6 +83,9 @@ func main() {
 		Deps:           deps,
 		Detector:       detector,
 		SourceRegistry: sourceRegistry,
+		ExportService:  exportSvc,
+		GPUDetector:    gpuDetector,
+		FFmpegWrapper:  ffmpegWrapper,
 	})
 
 	// Create Wails application

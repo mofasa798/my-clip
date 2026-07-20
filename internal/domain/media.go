@@ -58,3 +58,10 @@ type ExportRequest struct {
 	Format     string `json:"format"`
 	Preset     string `json:"preset"`
 }
+
+// EncoderOption describes an available encoder choice.
+type EncoderOption struct {
+	Name      string `json:"name"`
+	Value     string `json:"value"`
+	Available bool   `json:"available"`
+}

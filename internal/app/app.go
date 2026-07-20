@@ -2,8 +2,13 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"my-clip/internal/domain"
+	"my-clip/internal/media/export"
+	"my-clip/internal/media/ffmpeg"
+	"my-clip/internal/media/ffprobe"
+	"my-clip/internal/media/gpu"
 	"my-clip/internal/source/download"
 	"my-clip/internal/source/registry"
 	"my-clip/internal/source/resolver"
@@ -12,11 +17,14 @@ import (
 
 // Options holds the dependencies for the application service.
 type Options struct {
-	Logger        *system.Logger
-	Config        *system.Config
-	Deps          *system.DepResult
-	Detector      *system.Detector
+	Logger         *system.Logger
+	Config         *system.Config
+	Deps           *system.DepResult
+	Detector       *system.Detector
 	SourceRegistry *registry.Registry
+	ExportService  *export.Service
+	GPUDetector    *gpu.Detector
+	FFmpegWrapper  *ffmpeg.Wrapper
 }
 
 // App is the main application service exposed to the frontend via Wails bindings.
@@ -28,6 +36,9 @@ type App struct {
 
 	sourceResolver *resolver.Resolver
 	downloadSvc    *download.Service
+	exportSvc      *export.Service
+	gpuDetector    *gpu.Detector
+	ffmpeg         *ffmpeg.Wrapper
 }
 
 // New creates a new App service.
@@ -41,6 +52,9 @@ func New(opts Options) *App {
 		detector:       opts.Detector,
 		sourceResolver: resolver.New(opts.SourceRegistry),
 		downloadSvc:    svc,
+		exportSvc:      opts.ExportService,
+		gpuDetector:    opts.GPUDetector,
+		ffmpeg:         opts.FFmpegWrapper,
 	}
 }
 
@@ -58,7 +72,7 @@ func (a *App) Shutdown() error {
 
 // GetVersion returns the current application version.
 func (a *App) GetVersion() string {
-	return "0.1.0"
+	return "0.2.0"
 }
 
 // GetDependencies returns the current dependency detection results.
@@ -114,8 +128,6 @@ func (a *App) GetMetadata(url string) (*domain.VideoMetadata, error) {
 }
 
 // StartDownload begins downloading a video.
-// url: the video URL
-// streamID: the selected stream format ID
 func (a *App) StartDownload(url, streamID string) (*domain.DownloadResult, error) {
 	ctx := context.Background()
 	a.logger.Info("Starting download: %s", url)
@@ -130,7 +142,61 @@ func (a *App) StartDownload(url, streamID string) (*domain.DownloadResult, error
 	return result, nil
 }
 
-// onDownloadProgress is called periodically during download.
 func (a *App) onDownloadProgress(p domain.DownloadProgress) {
 	a.logger.Debug("Download progress: %.1f%%", p.Percentage)
+}
+
+// --- Media Layer Methods ---
+
+// ProbeFile reads metadata from a local media file using FFprobe.
+func (a *App) ProbeFile(filePath string) (*ffprobe.MediaInfo, error) {
+	a.logger.Info("Probing file: %s", filePath)
+	info, err := ffprobe.Probe(filePath)
+	if err != nil {
+		a.logger.Error("FFprobe failed: %v", err)
+		return nil, err
+	}
+	return info, nil
+}
+
+// CreateClip extracts a clip from a local media file.
+func (a *App) CreateClip(inputFile string, startSeconds, endSeconds float64) error {
+	a.logger.Info("Creating clip: %s [%f - %f]", inputFile, startSeconds, endSeconds)
+
+	req := domain.ClipRequest{
+		InputFile: inputFile,
+		StartTime: time.Duration(startSeconds * float64(time.Second)),
+		EndTime:   time.Duration(endSeconds * float64(time.Second)),
+		OutputDir: a.config.OutputDir,
+	}
+
+	return a.exportSvc.CreateClip(req, a.onExportProgress)
+}
+
+// ExportFile exports a media file with the given options.
+func (a *App) ExportFile(inputFile, encoder, format string) error {
+	a.logger.Info("Exporting file: %s (encoder: %s)", inputFile, encoder)
+
+	req := domain.ExportRequest{
+		InputFile: inputFile,
+		OutputDir: a.config.OutputDir,
+		Encoder:   encoder,
+		Format:    format,
+	}
+
+	return a.exportSvc.Export(req, a.onExportProgress)
+}
+
+// GetGPUInfo returns GPU encoding capabilities.
+func (a *App) GetGPUInfo() *gpu.Capabilities {
+	return a.gpuDetector.Detect()
+}
+
+// GetAvailableEncoders returns the list of available encoders.
+func (a *App) GetAvailableEncoders() []domain.EncoderOption {
+	return a.exportSvc.AvailableEncoders()
+}
+
+func (a *App) onExportProgress(p domain.ExportProgress) {
+	a.logger.Debug("Export progress: %.1f%% (%.1f fps, %s)", p.Percentage, p.FPS, p.Speed)
 }
