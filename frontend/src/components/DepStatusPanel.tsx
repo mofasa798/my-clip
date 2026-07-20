@@ -1,3 +1,4 @@
+import { memo } from "react"
 import type { DepResult } from "../types"
 
 interface Props {
@@ -5,7 +6,7 @@ interface Props {
   onRefresh: () => void
 }
 
-function StatusBadge({ found }: { found: boolean }) {
+const StatusBadge = memo(function StatusBadge({ found }: { found: boolean }) {
   return (
     <span
       className={`inline-block w-2 h-2 rounded-full ${
@@ -13,9 +14,9 @@ function StatusBadge({ found }: { found: boolean }) {
       }`}
     />
   )
-}
+})
 
-export default function DepStatusPanel({ deps, onRefresh }: Props) {
+const DepStatusPanel = memo(function DepStatusPanel({ deps, onRefresh }: Props) {
   if (!deps) {
     return <div className="text-gray-400 text-sm">Checking dependencies...</div>
   }
@@ -56,4 +57,6 @@ export default function DepStatusPanel({ deps, onRefresh }: Props) {
       </div>
     </div>
   )
-}
+})
+
+export default DepStatusPanel

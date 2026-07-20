@@ -1,9 +1,15 @@
-import { useState, useEffect } from "react"
-import HomePage from "./pages/HomePage"
-import EditorPage from "./pages/EditorPage"
-import HistoryPage from "./pages/HistoryPage"
-import SettingsPage from "./pages/SettingsPage"
+import { useState, useEffect, lazy, Suspense, memo } from "react"
 import type { DepResult, Config } from "./types"
+
+// Lazy-loaded pages for code splitting
+const HomePage = lazy(() => import("./pages/HomePage"))
+const EditorPage = lazy(() => import("./pages/EditorPage"))
+const HistoryPage = lazy(() => import("./pages/HistoryPage"))
+const SettingsPage = lazy(() => import("./pages/SettingsPage"))
+
+const PageFallback = memo(function PageFallback() {
+  return <div className="flex items-center justify-center min-h-[60vh] text-gray-500 text-sm">Loading...</div>
+})
 
 type Page = "home" | "editor" | "history" | "settings"
 
@@ -126,25 +132,27 @@ export default function App() {
 
       {/* Page Content */}
       <main className={currentPage !== "home" ? "pb-12" : ""}>
-        {currentPage === "home" && (
-          <HomePage deps={deps} onRefreshDeps={handleRefreshDeps} onNavigateEditor={handleNavigateEditor} />
-        )}
-        {currentPage === "editor" && (
-          <EditorPage videoPath={editorFile} videoTitle={editorTitle} onBack={() => setCurrentPage("home")} />
-        )}
-        {currentPage === "history" && (
-          <HistoryPage onOpenFolder={handleOpenFolder} />
-        )}
-        {currentPage === "settings" && (
-          <SettingsPage config={config} deps={deps} onSave={handleSaveConfig} onRefreshDeps={handleRefreshDeps} />
-        )}
+        <Suspense fallback={<PageFallback />}>
+          {currentPage === "home" && (
+            <HomePage deps={deps} onRefreshDeps={handleRefreshDeps} onNavigateEditor={handleNavigateEditor} />
+          )}
+          {currentPage === "editor" && (
+            <EditorPage videoPath={editorFile} videoTitle={editorTitle} onBack={() => setCurrentPage("home")} />
+          )}
+          {currentPage === "history" && (
+            <HistoryPage onOpenFolder={handleOpenFolder} />
+          )}
+          {currentPage === "settings" && (
+            <SettingsPage config={config} deps={deps} onSave={handleSaveConfig} onRefreshDeps={handleRefreshDeps} />
+          )}
+        </Suspense>
       </main>
 
       {/* Status Bar */}
       <footer className={`fixed bottom-0 left-0 right-0 border-t ${footerBg} px-4 py-1.5`}>
         <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-gray-500">
           <span>Ready</span>
-          <span>My Clip v0.4.0</span>
+          <span>My Clip v0.6.0</span>
         </div>
       </footer>
     </div>

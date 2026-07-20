@@ -81,7 +81,7 @@ func (a *App) Shutdown() error {
 
 // GetVersion returns the current application version.
 func (a *App) GetVersion() string {
-	return "0.4.0"
+	return "0.6.0"
 }
 
 // GetDependencies returns the current dependency detection results.

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, memo } from "react"
 import DepStatusPanel from "../components/DepStatusPanel"
 import type { DepResult, VideoMetadata, DownloadResult } from "../types"
 
@@ -26,7 +26,7 @@ interface Props {
   onNavigateEditor: (filePath: string, title: string) => void
 }
 
-export default function HomePage({ deps, onRefreshDeps, onNavigateEditor }: Props) {
+export default memo(function HomePage({ deps, onRefreshDeps, onNavigateEditor }: Props) {
   const [url, setUrl] = useState("")
   const [version, setVersion] = useState("")
   const [loading, setLoading] = useState(false)
@@ -234,4 +234,4 @@ export default function HomePage({ deps, onRefreshDeps, onNavigateEditor }: Prop
       </div>
     </div>
   )
-}
+})

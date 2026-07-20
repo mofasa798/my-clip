@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, memo } from "react"
 import type { ExportPreset } from "../types"
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
   onBack: () => void
 }
 
-export default function EditorPage({ videoPath, videoTitle, onBack }: Props) {
+const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [startTime, setStartTime] = useState(0)
   const [endTime, setEndTime] = useState(100)
@@ -257,4 +257,6 @@ export default function EditorPage({ videoPath, videoTitle, onBack }: Props) {
       </div>
     </div>
   )
-}
+})
+
+export default EditorPage

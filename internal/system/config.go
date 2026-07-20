@@ -25,8 +25,11 @@ func DefaultConfig() *Config {
 	}
 }
 
-// configPath returns the path to the configuration file.
-func configPath() string {
+// configPath is overridable for testing.
+var configPath = configPathDefault
+
+// configPathDefault returns the default path to the configuration file.
+func configPathDefault() string {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
 		return "settings.json"
