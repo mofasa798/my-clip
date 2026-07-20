@@ -1,6 +1,7 @@
 package system
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -69,14 +70,38 @@ func (d *Detector) detectBinary(name string, args ...string) DepStatus {
 }
 
 // runBinary executes a binary and returns its status.
+// Captures both stdout and stderr because some wrappers (e.g. Chocolatey shims)
+// output version info to stderr and exit with a non-zero code.
 func (d *Detector) runBinary(fullPath, displayName string, args ...string) DepStatus {
+	// First try the normal approach (cmd.Output captures stdout)
 	cmd := exec.Command(fullPath, args...)
-	output, err := cmd.Output()
-	if err != nil {
-		return DepStatus{Name: displayName, Found: false}
+	stdout, err := cmd.Output()
+
+	var output []byte
+	if err == nil {
+		output = stdout
+	} else {
+		// On failure, try capturing stderr too — some binaries/shims
+		// write version info to stderr and exit non-zero.
+		cmd2 := exec.Command(fullPath, args...)
+		var stderrBuf bytes.Buffer
+		cmd2.Stdout = &stderrBuf
+		cmd2.Stderr = &stderrBuf
+		_ = cmd2.Run()
+		output = stderrBuf.Bytes()
 	}
 
 	version := strings.TrimSpace(string(output))
+	if version == "" {
+		// Binary exists at path but we couldn't extract a version string
+		absPath, _ := filepath.Abs(fullPath)
+		return DepStatus{
+			Name:  displayName,
+			Found: true,
+			Path:  absPath,
+		}
+	}
+
 	if idx := strings.Index(version, "\n"); idx >= 0 {
 		version = version[:idx]
 	}
