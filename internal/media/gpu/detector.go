@@ -5,9 +5,34 @@
 package gpu
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
+
+// Known FFmpeg installation paths on Windows.
+var gpuSearchPaths = []string{
+	`C:\ffmpeg-8.0.1\ffmpeg-2026-01-26-git-fe0813d6e2-full_build\bin`,
+	`C:\ffmpeg\bin`,
+	`C:\Program Files\ffmpeg\bin`,
+	`C:\Program Files (x86)\ffmpeg\bin`,
+}
+
+// findFFmpeg locates the ffmpeg binary via PATH then known directories.
+func findFFmpeg() (string, error) {
+	if path, err := exec.LookPath("ffmpeg"); err == nil {
+		return path, nil
+	}
+	for _, dir := range gpuSearchPaths {
+		fullPath := filepath.Join(dir, "ffmpeg.exe")
+		if _, err := os.Stat(fullPath); err == nil {
+			return fullPath, nil
+		}
+	}
+	return "", fmt.Errorf("ffmpeg not found")
+}
 
 // EncoderInfo describes a detected hardware encoder.
 type EncoderInfo struct {
@@ -33,7 +58,7 @@ type Detector struct {
 
 // New creates a GPU Detector.
 func New() *Detector {
-	path, _ := exec.LookPath("ffmpeg")
+	path, _ := findFFmpeg()
 	return &Detector{
 		ffmpegPath: path,
 	}
