@@ -3,6 +3,7 @@ version: '3'
 vars:
   APP_NAME: 'my-clip'
   BIN_DIR: 'bin'
+  PACKAGE_MANAGER: 'npm'
 
 tasks:
   go:mod:tidy:

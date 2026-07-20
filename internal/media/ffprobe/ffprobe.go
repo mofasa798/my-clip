@@ -10,22 +10,16 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-)
 
-// Known FFprobe installation paths on Windows.
-var probeSearchPaths = []string{
-	`C:\ffmpeg-8.0.1\ffmpeg-2026-01-26-git-fe0813d6e2-full_build\bin`,
-	`C:\ffmpeg\bin`,
-	`C:\Program Files\ffmpeg\bin`,
-	`C:\Program Files (x86)\ffmpeg\bin`,
-}
+	"my-clip/internal/shared"
+)
 
 // findFFprobe locates the ffprobe binary.
 func findFFprobe() (string, error) {
 	if path, err := exec.LookPath("ffprobe"); err == nil {
 		return path, nil
 	}
-	for _, dir := range probeSearchPaths {
+	for _, dir := range shared.FFmpegSearchPaths {
 		fullPath := filepath.Join(dir, "ffprobe.exe")
 		if _, err := os.Stat(fullPath); err == nil {
 			return fullPath, nil
@@ -56,19 +50,19 @@ type ffprobeOutput struct {
 }
 
 type ffprobeStream struct {
-	CodecType string `json:"codec_type"`
-	CodecName string `json:"codec_name"`
-	Width     int    `json:"width"`
-	Height    int    `json:"height"`
-	Bitrate   string `json:"bitrate"`
+	CodecType  string `json:"codec_type"`
+	CodecName  string `json:"codec_name"`
+	Width      int    `json:"width"`
+	Height     int    `json:"height"`
+	Bitrate    string `json:"bitrate"`
 	RFrameRate string `json:"r_frame_rate"`
 }
 
 type ffprobeFormat struct {
-	Duration string `json:"duration"`
-	Size     string `json:"size"`
+	Duration   string `json:"duration"`
+	Size       string `json:"size"`
 	FormatName string `json:"format_name"`
-	Bitrate  string `json:"bitrate"`
+	Bitrate    string `json:"bitrate"`
 }
 
 // Probe reads metadata from a local media file.

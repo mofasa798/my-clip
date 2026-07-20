@@ -18,15 +18,8 @@ import (
 	"time"
 
 	"my-clip/internal/domain"
+	"my-clip/internal/shared"
 )
-
-// Known FFmpeg installation paths on Windows.
-var searchPaths = []string{
-	`C:\ffmpeg-8.0.1\ffmpeg-2026-01-26-git-fe0813d6e2-full_build\bin`,
-	`C:\ffmpeg\bin`,
-	`C:\Program Files\ffmpeg\bin`,
-	`C:\Program Files (x86)\ffmpeg\bin`,
-}
 
 // findBinary locates a binary by PATH then known directories.
 func findBinary(name string) (string, error) {
@@ -37,7 +30,7 @@ func findBinary(name string) (string, error) {
 	if filepath.Ext(name) == "" {
 		binary = name + ".exe"
 	}
-	for _, dir := range searchPaths {
+	for _, dir := range shared.FFmpegSearchPaths {
 		fullPath := filepath.Join(dir, binary)
 		if _, err := os.Stat(fullPath); err == nil {
 			return fullPath, nil
