@@ -21,6 +21,46 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
   const [activePreset, setActivePreset] = useState("")
   const [notification, setNotification] = useState("")
 
+  // --- Functions used by keyboard shortcuts must be defined first ---
+
+  const showNotif = (msg: string) => {
+    setNotification(msg)
+    setTimeout(() => setNotification(""), 4000)
+  }
+
+  const handleExport = async () => {
+    setExporting(true)
+    setExportDone(false)
+    setExportError("")
+    setExportProgress(0)
+
+    // Simulate progress while waiting for backend
+    const progressTimer = setInterval(() => {
+      setExportProgress(prev => Math.min(prev + 5, 90))
+    }, 800)
+
+    try {
+      if (window.GoApp?.ExportFile) {
+        await window.GoApp.ExportFile(videoPath, encoder, "mp4")
+        setExportProgress(100)
+        setExportDone(true)
+        showNotif("✓ Export completed!")
+        window.GoApp?.ShowNotification?.("My Clip", "Export completed successfully!").catch(() => {})
+        if (window.GoApp?.GetOutputDir) {
+          const dir = await window.GoApp.GetOutputDir()
+          window.GoApp.OpenFolder(dir).catch(() => {})
+        }
+      }
+    } catch (err: any) {
+      const msg = err?.message || "Export failed. Check that FFmpeg is available and the file is valid."
+      setExportError(msg)
+      showNotif("✗ " + msg)
+    } finally {
+      clearInterval(progressTimer)
+      setExporting(false)
+    }
+  }
+
   // Keyboard shortcuts
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!videoRef.current) return
@@ -50,24 +90,17 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
         onBack()
         break
     }
-  }, [startTime, endTime, exporting])
+  }, [startTime, endTime, exporting, handleExport, onBack])
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [handleKeyDown])
 
-  // Load presets and encoders
+  // Load presets and encoders on mount
   useEffect(() => {
-    if (window.GoApp?.GetPresets) {
-      window.GoApp.GetPresets().then(setPresets).catch(console.error)
-    }
+    window.GoApp?.GetPresets?.().then(setPresets).catch(console.error)
   }, [])
-
-  const showNotif = (msg: string) => {
-    setNotification(msg)
-    setTimeout(() => setNotification(""), 4000)
-  }
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
@@ -80,34 +113,6 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
     if (!videoRef.current) return
     videoRef.current.currentTime = startTime
     videoRef.current.play()
-  }
-
-  const handleExport = async () => {
-    setExporting(true)
-    setExportDone(false)
-    setExportError("")
-    setExportProgress(0)
-    try {
-      if (window.GoApp?.ExportFile) {
-        await window.GoApp.ExportFile(videoPath, encoder, "mp4")
-        setExportDone(true)
-        showNotif("✓ Export completed!")
-        if (window.GoApp?.ShowNotification) {
-          window.GoApp.ShowNotification("My Clip", "Export completed successfully!").catch(() => {})
-        }
-        // Open output folder after export
-        if (window.GoApp?.GetOutputDir) {
-          const dir = await window.GoApp.GetOutputDir()
-          window.GoApp.OpenFolder(dir).catch(() => {})
-        }
-      }
-    } catch (err: any) {
-      const msg = err?.message || "Export failed. Check that FFmpeg is available and the file is valid."
-      setExportError(msg)
-      showNotif("✗ " + msg)
-    } finally {
-      setExporting(false)
-    }
   }
 
   const handlePresetChange = (name: string) => {

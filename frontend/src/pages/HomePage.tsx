@@ -5,17 +5,38 @@ import type { DepResult, VideoMetadata, DownloadResult } from "../types"
 declare global {
   interface Window {
     GoApp?: {
+      // Core
       GetVersion(): Promise<string>
       GetDependencies(): Promise<DepResult>
       RefreshDependencies(): Promise<DepResult>
       GetConfig(): Promise<Record<string, string>>
       SaveConfig(cfg: Record<string, string>): Promise<void>
+      // Source
       SupportedSources(): Promise<string[]>
       ResolveSource(url: string): Promise<string>
       GetMetadata(url: string): Promise<VideoMetadata>
       StartDownload(url: string, streamId: string): Promise<DownloadResult>
       ProbeFile(path: string): Promise<any>
+      // Media
+      ExportFile(inputFile: string, encoder: string, format: string): Promise<void>
+      GetGPUInfo(): Promise<any>
+      GetAvailableEncoders(): Promise<any[]>
+      // Presets
+      GetPresets(): Promise<any[]>
+      SavePreset(preset: any): Promise<void>
+      DeletePreset(name: string): Promise<void>
+      // History
       GetHistory(): Promise<any[]>
+      DeleteHistoryEntry(index: number): Promise<void>
+      ClearHistory(): Promise<void>
+      // File
+      GetOutputDir(): Promise<string>
+      OpenFolder(path: string): Promise<void>
+      GetFileInfo(path: string): Promise<any>
+      CopyPathToClipboard(path: string): Promise<void>
+      // Misc
+      ShowNotification(title: string, message: string): Promise<void>
+      CleanupTemp(dir: string): Promise<void>
     }
   }
 }
