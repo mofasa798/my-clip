@@ -2,39 +2,45 @@
 
 # Frontend Engineering Guide
 
-This document defines the frontend architecture, responsibilities, and engineering standards.
+This document defines the engineering standards, responsibilities, and implementation guidelines for the React frontend.
 
 The frontend is responsible for presenting the user interface and communicating with the backend.
 
-It should remain lightweight, predictable, and free of business logic.
+Business logic must remain in the backend.
 
 ---
 
-# Frontend Responsibilities
+# Responsibilities
 
 The frontend owns:
 
 * User interaction
 * Navigation
-* State presentation
-* Timeline interaction
 * Video preview
-* Form validation
+* Timeline editing
 * Progress visualization
+* Form validation
 * Theme management
+* Window state
 
-The frontend must never implement business logic.
+The frontend should never implement business logic.
+
+---
+
+# Frontend Philosophy
+
+The frontend presents workflows, not implementations.
+
+Users interact with videos through a consistent interface regardless of where the media originates.
+
+The frontend should remain unaware of source-specific behavior.
 
 ---
 
 # Frontend Architecture
 
-```text
-React UI
-
-↓
-
-Components
+```text id="uv0z3r"
+React Components
 
 ↓
 
@@ -65,22 +71,43 @@ The frontend should be:
 * Reactive
 * Component-based
 * Accessible
+* Predictable
 * Easy to maintain
 
-Business rules belong in the backend.
+Keep business rules in the backend.
+
+---
+
+# Backend-Driven UI
+
+The backend is the source of truth.
+
+The frontend should:
+
+* Render backend models
+* Display backend state
+* Trigger backend actions
+* Subscribe to backend events
+
+The frontend should not decide:
+
+* Which source is used
+* Which encoder is selected
+* Which hardware is available
+* Which processing strategy is executed
+
+Those decisions belong to the backend.
 
 ---
 
 # Application Workflow
 
-The UI follows a simple workflow.
-
-```text
+```text id="7h2v9f"
 Paste Video URL
 
 ↓
 
-Load Video Metadata
+Load Metadata
 
 ↓
 
@@ -103,15 +130,15 @@ Export Clip
 View History
 ```
 
-The workflow is identical for every supported video source.
+This workflow is identical for every supported source.
 
 ---
 
-# Page Structure
+# Pages
 
 Recommended pages:
 
-```text
+```text id="2dcdf6"
 Home
 
 Editor
@@ -121,7 +148,7 @@ History
 Settings
 ```
 
-Each page owns one responsibility.
+Each page should own one responsibility.
 
 ---
 
@@ -130,14 +157,14 @@ Each page owns one responsibility.
 Responsibilities:
 
 * Accept video URL
-* Display supported providers
 * Validate input
-* Request metadata
+* Load metadata
+* Display supported sources
 * Navigate to the editor
 
-The Home page should not detect providers.
+The Home page should never detect the source.
 
-Provider detection belongs to the backend.
+Source detection belongs to the backend.
 
 ---
 
@@ -145,13 +172,14 @@ Provider detection belongs to the backend.
 
 Responsibilities:
 
-* Display video metadata
-* Preview video
+* Display metadata
+* Video preview
 * Timeline editing
+* Clip selection
 * Export configuration
-* Progress monitoring
+* Export progress
 
-The Editor operates only on generic video metadata.
+The Editor works exclusively with generic video models.
 
 ---
 
@@ -163,7 +191,7 @@ Responsibilities:
 * Display download history
 * Search
 * Filter
-* Open export directory
+* Open output directory
 
 History should remain read-only.
 
@@ -176,8 +204,8 @@ Responsibilities:
 * Output directory
 * Preferred encoder
 * Theme
-* GPU preferences
-* Application settings
+* Export defaults
+* Application preferences
 
 Settings should be loaded from the backend.
 
@@ -187,20 +215,24 @@ Settings should be loaded from the backend.
 
 Example:
 
-```text
+```text id="o7b54t"
 components/
 
 Button/
-Card/
-Dialog/
-Input/
-ProgressBar/
 
-MetadataCard/
+Card/
+
+Dialog/
+
+Input/
+
+ProgressBar/
 
 Timeline/
 
 VideoPlayer/
+
+MetadataCard/
 
 ExportPanel/
 ```
@@ -209,36 +241,25 @@ Components should remain small and reusable.
 
 ---
 
-# Component Rules
-
-Each component should:
-
-* Have one responsibility
-* Receive data through props
-* Avoid hidden side effects
-* Remain reusable
-
-Avoid overly large components.
-
----
-
 # Hooks
 
-Hooks manage UI behavior.
+Hooks manage UI behavior only.
 
 Examples:
 
-```text
-useExport()
-
+```text id="i8h8n7"
 useTimeline()
 
 useVideoPlayer()
 
+useExport()
+
+useHistory()
+
 useSettings()
 ```
 
-Hooks should not contain business logic.
+Avoid business logic inside hooks.
 
 ---
 
@@ -249,24 +270,25 @@ Services communicate with the backend.
 Responsibilities:
 
 * Wails bindings
+* Event subscriptions
 * Request mapping
 * Response mapping
-* Error propagation
 
-Services should never implement business rules.
+Services should never contain business rules.
 
 ---
 
 # State Management
 
-Global state should be minimal.
+Global state should remain minimal.
 
 Examples:
 
 * Theme
 * Active page
-* Current export progress
 * Dialog state
+* Export progress
+* Playback state
 
 Business state belongs to the backend.
 
@@ -278,27 +300,26 @@ The frontend should consume generic models.
 
 Examples:
 
-```text
-VideoMetadata
+* VideoMetadata
+* StreamInfo
+* ClipRequest
+* ExportOptions
+* ExportProgress
+* HistoryEntry
 
-StreamInfo
-
-ClipRequest
-
-ExportOptions
-
-ExportProgress
-```
-
-The frontend should not distinguish between YouTube, Kick, or future providers.
+The frontend should never distinguish between YouTube, Kick, or future sources.
 
 ---
 
 # Event Flow
 
-Backend events:
+The frontend reacts to backend events.
 
-```text
+Examples:
+
+```text id="3o4u3d"
+metadata.loaded
+
 download.started
 
 download.progress
@@ -312,21 +333,17 @@ export.progress
 export.completed
 ```
 
-The frontend subscribes to events.
-
-Avoid polling.
+Prefer event-driven communication over polling.
 
 ---
 
 # Video Preview
 
-The preview is based on local media.
-
-The frontend should never stream directly from an online provider.
+The preview operates exclusively on local media.
 
 Workflow:
 
-```text
+```text id="7mhj2i"
 Video URL
 
 ↓
@@ -342,6 +359,8 @@ Local Media
 Video Preview
 ```
 
+The frontend should never stream directly from an online source.
+
 ---
 
 # Timeline
@@ -351,12 +370,10 @@ The timeline is a presentation component.
 Responsibilities:
 
 * Display duration
-* Select start/end points
-* Display playhead
+* Select clip range
+* Move playhead
 * Zoom
 * Seek
-
-Timeline calculations remain simple.
 
 Complex validation belongs to the backend.
 
@@ -364,7 +381,9 @@ Complex validation belongs to the backend.
 
 # Form Validation
 
-Frontend validation should cover:
+Frontend validation should be lightweight.
+
+Validate:
 
 * Required fields
 * Empty input
@@ -378,72 +397,73 @@ Business validation belongs to the backend.
 
 Display user-friendly messages.
 
-Avoid exposing internal implementation details.
-
-Example:
+Examples:
 
 Good:
 
-```text
-Unable to retrieve video metadata.
+```text id="v2n5g1"
+Unable to load video metadata.
 ```
 
 Avoid:
 
-```text
-yt-dlp exited with code 1
+```text id="j0g8h2"
+yt-dlp exited with status code 1.
 ```
 
-Implementation details should remain hidden.
-
----
-
-# Performance
-
-Prioritize:
-
-* Fast rendering
-* Minimal re-renders
-* Lazy loading where appropriate
-* Lightweight components
-
-Avoid unnecessary state.
-
----
-
-# Accessibility
-
-The UI should support:
-
-* Keyboard navigation
-* Focus management
-* Screen reader compatibility
-* Clear visual feedback
-
-Accessibility should be considered from the beginning.
+Internal implementation details should never be exposed.
 
 ---
 
 # Styling
 
-Use Tailwind CSS.
+Use:
 
-Design should follow the Design System documentation.
+* Tailwind CSS
+
+Follow the project's Design System.
 
 Avoid inline styles.
 
 ---
 
+# Accessibility
+
+The interface should support:
+
+* Keyboard navigation
+* Focus management
+* Screen readers
+* Visible focus indicators
+* Clear interaction feedback
+
+Accessibility should be considered from the beginning.
+
+---
+
+# Performance
+
+The frontend should:
+
+* Minimize unnecessary re-renders
+* Lazy-load heavy components
+* Keep component state local when possible
+* Avoid excessive global state
+
+Rendering should remain responsive during long-running backend operations.
+
+---
+
 # Testing
 
-Frontend tests should verify:
+Frontend tests should focus on:
 
-* Rendering
+* Component rendering
 * User interaction
-* Component behavior
 * Hook behavior
+* Event handling
 
-Do not test implementation details.
+Do not test backend business logic from the frontend.
 
 ---
 
@@ -453,17 +473,18 @@ When generating frontend code:
 
 * Keep components focused.
 * Keep hooks lightweight.
-* Place business logic in the backend.
 * Reuse existing components.
-* Consume generic backend models.
-* Never assume a specific video provider.
+* Consume backend models directly.
+* Avoid duplicate state.
+* Respect Backend-Driven UI.
+* Never implement source-specific logic.
 
 ---
 
 # Frontend Philosophy
 
-The frontend presents workflows, not Source implementations.
+The frontend exists to present a consistent editing experience.
 
-Users interact with videos through a consistent interface, regardless of where the media originated.
+It should not understand how media is downloaded, how clips are exported, or how hardware acceleration works.
 
-A well-designed frontend is unaware of provider-specific behavior and focuses entirely on delivering a smooth editing experience.
+Its responsibility is to display state, collect user input, and provide a responsive interface while the backend performs the application's core workflows.

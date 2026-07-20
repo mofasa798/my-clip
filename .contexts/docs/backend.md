@@ -2,37 +2,42 @@
 
 # Backend Engineering Guide
 
-This document defines the backend architecture, responsibilities, and engineering standards.
+This document defines the engineering standards, responsibilities, and implementation guidelines for the Go backend.
 
-The backend is the heart of the application.
+The backend owns all business logic, media processing, source integration, and communication with the operating system.
 
-It coordinates workflows, owns all business logic, and manages communication between the Source Layer, Media Layer, and System Layer.
-
-The frontend must never contain business logic.
+The frontend should remain a presentation layer.
 
 ---
 
-# Backend Responsibilities
+# Responsibilities
 
-The backend owns:
+The backend is responsible for:
 
-* Application lifecycle
 * Business logic
-* Source orchestration
-* Download orchestration
+* Source resolution
 * Media processing
-* GPU selection
+* Export pipeline
+* Hardware capability detection
 * Settings management
 * History management
-* Logging
-* File management
-* Progress reporting
+* Communication with external tools
+
+The backend should remain the single source of truth.
 
 ---
 
 # Backend Architecture
 
-```text id="q1xp4r"
+```text
+Frontend (React)
+
+↓
+
+Wails Bindings
+
+↓
+
 Application
 
 ↓
@@ -42,9 +47,6 @@ Domain
 ↓
 
 Source
-
-↓
-
 Media
 
 ↓
@@ -52,7 +54,23 @@ Media
 System
 ```
 
-Dependencies always point downward.
+Business logic must never exist above the Domain layer.
+
+---
+
+# Core Principles
+
+The backend should be:
+
+* Source-agnostic
+* Local-first
+* Capability-driven
+* Predictable
+* Explicit
+* Easy to test
+* Easy to extend
+
+Favor simplicity over abstraction.
 
 ---
 
@@ -60,178 +78,88 @@ Dependencies always point downward.
 
 ## Application
 
-Coordinates workflows.
+Coordinates use cases.
 
 Examples:
 
-* Download workflow
-* Export workflow
-* Settings workflow
+* Load metadata
+* Download media
+* Export clip
+* Save settings
 
-The Application layer coordinates services but should contain minimal business rules.
+Application services orchestrate workflows.
 
 ---
 
 ## Domain
 
-Contains business logic.
+Owns business rules.
 
 Examples:
 
-* Clip creation
-* Export requests
-* Download requests
-* Settings validation
-* History management
+* Clip validation
+* Export validation
+* Workflow coordination
+* Generic media models
 
-The Domain layer must never know which video Source is being used.
+The Domain layer must not depend on infrastructure.
 
 ---
 
 ## Source
 
-Responsible for supported video providers.
+Responsible for online video sources.
 
 Responsibilities:
 
-* Detect Source
-* Validate URL
-* Retrieve metadata
-* Retrieve streams
-* Download media
+* Source detection
+* URL validation
+* Metadata retrieval
+* Download
 
-Every provider implements the same interface.
-
-Examples:
-
-* YouTube
-* Kick
-
-The rest of the backend communicates only through the Source interface.
+The Source layer ends once local media is available.
 
 ---
 
 ## Media
 
-Responsible for local media operations.
+Responsible for local media processing.
 
-Examples:
+Responsibilities:
 
-* FFmpeg
-* FFprobe
-* GPU detection
-* Export
-* Media inspection
+* FFmpeg wrapper
+* FFprobe wrapper
+* Hardware detection
+* Export pipeline
+* Stream Copy
 
-The Media layer operates only on local files.
+The Media layer operates exclusively on local files.
 
 ---
 
 ## System
 
-Responsible for operating system interaction.
+Responsible for infrastructure.
 
 Examples:
 
 * File system
 * Logging
-* Background workers
-* Process execution
+* Configuration
+* External process execution
 
-This layer should contain no business logic.
-
----
-
-# Suggested Directory Structure
-
-```text id="h2wbmz"
-backend/
-
-main.go
-
-internal/
-
-    app/
-
-    domain/
-
-    Source/
-
-    media/
-
-    system/
-
-    shared/
-```
-
-Each package should own one domain.
+Business logic never belongs here.
 
 ---
 
-# Source Module
+# Data Flow
 
-The Source module is responsible for online video providers.
-
-Suggested structure:
-
-```text id="ewzy5u"
-Source/
-
-resolver/
-
-adapters/
-
-    youtube/
-
-    kick/
-```
-
-Each adapter should expose identical capabilities.
-
----
-
-# Domain Services
-
-Examples:
-
-```text id="8zjlwm"
-ClipService
-
-DownloadService
-
-HistoryService
-
-SettingsService
-```
-
-Services should describe business capabilities.
-
-Avoid names such as:
-
-```text id="x9c94n"
-Manager
-
-Helper
-
-Processor
-
-Utility
-```
-
----
-
-# Source Flow
-
-```text id="gdjlwm"
+```text
 Video URL
 
 ↓
 
-Source Resolver
-
-↓
-
-Source Adapter
+Source
 
 ↓
 
@@ -239,77 +167,44 @@ Video Metadata
 
 ↓
 
-Download
-```
-
-Business services should never communicate directly with Source implementations.
-
----
-
-# Media Flow
-
-```text id="ck8m8r"
 Local Media
 
 ↓
 
-FFprobe
-
-↓
-
-Clip Service
-
-↓
-
-FFmpeg
+Clip Request
 
 ↓
 
 Export
+
+↓
+
+History
 ```
 
-Media processing remains Source-independent.
+The workflow should remain consistent regardless of the original source.
 
 ---
 
-# System Flow
+# Service Design
 
-```text id="b9jlwm"
-Media Layer
+Each service should have one responsibility.
 
-↓
+Good examples:
 
-Filesystem
+```text
+MetadataService
 
-↓
+DownloadService
 
-Process Execution
+ExportService
 
-↓
+HistoryService
 
-Operating System
+SettingsService
 ```
 
-The System layer should expose reusable capabilities.
-
----
-
-# External Processes
-
-External binaries include:
-
-* FFmpeg
-* FFprobe
-* yt-dlp
-
-Rules:
-
-* Execute only through dedicated wrappers.
-* Support context cancellation.
-* Capture stdout and stderr.
-* Return structured errors.
-
-Never execute external binaries from business services.
+Avoid services that combine unrelated responsibilities.
 
 ---
 
@@ -317,7 +212,7 @@ Never execute external binaries from business services.
 
 Allowed:
 
-```text id="tkjlwm"
+```text
 Application
 
 ↓
@@ -327,9 +222,6 @@ Domain
 ↓
 
 Source
-
-↓
-
 Media
 
 ↓
@@ -337,107 +229,105 @@ Media
 System
 ```
 
-Forbidden:
-
-```text id="h9rjlwm"
-Source
-
-↓
-
-React
-```
-
-Forbidden:
-
-```text id="mjlwm3"
-Media
-
-↓
-
-Source
-```
-
-Forbidden:
-
-```text id="vjlwm4"
-System
-
-↓
-
-Domain
-```
-
-Dependencies must remain acyclic.
+Never introduce upward dependencies.
 
 ---
 
-# Service Design
+# Source Integration
 
-Every service should:
+Every supported source implements the same interface.
 
-* Own one responsibility
-* Expose a small public API
-* Hide implementation details
-* Return structured errors
+Example:
 
-Avoid large services.
+```go
+type Source interface {
+    Name() string
+    Match(url string) bool
+    Metadata(ctx context.Context, url string) (*VideoMetadata, error)
+    Download(ctx context.Context, req DownloadRequest) (*DownloadResult, error)
+}
+```
 
----
-
-# State Management
-
-Keep services stateless whenever practical.
-
-Persistent state belongs only in:
-
-* Settings
-* History
-
-Avoid global variables.
+Business services should only depend on this interface.
 
 ---
 
-# Configuration
+# Generic Models
 
-Configuration should be centralized.
+Backend services should exchange generic models.
 
 Examples:
 
-* Output directory
-* Preferred encoder
-* Theme
-* Download options
+* VideoMetadata
+* StreamInfo
+* MediaFile
+* ClipRequest
+* ExportOptions
+* ExportResult
 
-Never hardcode configuration values.
-
----
-
-# Logging
-
-Centralize logging.
-
-Log meaningful events only.
-
-Examples:
-
-* Startup
-* Shutdown
-* Source detection
-* Download started
-* Export completed
-* Errors
-
-Avoid verbose logging.
+Avoid source-specific models outside the Source layer.
 
 ---
 
-# Event System
+# External Tools
 
-The backend emits events through Wails.
+External tools are infrastructure.
 
 Examples:
 
-```text id="kjlwm5"
+* yt-dlp
+* FFmpeg
+* FFprobe
+
+Only dedicated wrappers should invoke them.
+
+No business service should execute external commands directly.
+
+---
+
+# Hardware Strategy
+
+The backend should detect available hardware capabilities dynamically.
+
+Supported acceleration may include:
+
+* NVIDIA NVENC
+* AMD AMF
+* Intel Quick Sync Video
+
+Hardware vendors should never be hardcoded into business logic.
+
+---
+
+# Processing Strategy
+
+Preferred order:
+
+```text
+Stream Copy
+
+↓
+
+GPU Encoding
+
+↓
+
+CPU Encoding
+```
+
+The backend should automatically select the most efficient available method.
+
+---
+
+# Event Communication
+
+The backend communicates progress through Wails events.
+
+Examples:
+
+```text
+metadata.loaded
+
 download.started
 
 download.progress
@@ -451,85 +341,99 @@ export.progress
 export.completed
 ```
 
-The frontend subscribes to these events.
-
----
-
-# Validation
-
-Validate as early as possible.
-
-Examples:
-
-* URL
-* Output directory
-* Timestamp range
-* Export options
-* Encoder availability
-
-Reject invalid requests before starting long-running operations.
+Avoid polling whenever possible.
 
 ---
 
 # Error Handling
 
-Errors should include:
+Errors should be meaningful.
 
-* Context
-* Cause
-* Recovery information (when appropriate)
+Good examples:
 
-Avoid generic errors such as:
+* Invalid source URL
+* Unsupported source
+* Metadata unavailable
+* Download failed
+* Export failed
 
-```text id="sjlwm6"
-unknown error
-```
+Internal implementation details should remain hidden.
 
 ---
 
-# Background Workers
+# Concurrency
 
-Workers should be used only for long-running operations.
+Long-running operations should execute asynchronously.
 
 Examples:
 
-* Download
-* Export
+* Downloads
 * Metadata retrieval
+* Export
+* Hardware detection
 
-Workers should:
-
-* Support cancellation
-* Report progress
-* Return structured results
+The UI should remain responsive throughout these operations.
 
 ---
 
-# Performance
+# Configuration
 
-Optimize for:
+Application settings belong in dedicated configuration models.
 
-* Fast startup
-* Low memory usage
-* Efficient disk I/O
-* Minimal process spawning
+Examples:
 
-Avoid unnecessary abstractions.
+* Output directory
+* Preferred encoder
+* Temporary directory
+* Theme
+* Export defaults
+
+Avoid scattered configuration values.
+
+---
+
+# Logging
+
+Log entries should provide operational insight.
+
+Log:
+
+* Application startup
+* Source resolution
+* Download progress
+* Export lifecycle
+* Hardware detection
+* Unexpected failures
+
+Avoid excessive logging.
 
 ---
 
 # Testing
 
-Business logic should be tested independently of external tools.
+Prioritize testing for:
 
-Mock:
+* Business rules
+* Source adapters
+* Media wrappers
+* Export workflow
+* Error handling
 
-* FFmpeg
-* FFprobe
-* yt-dlp
-* Filesystem
+External tools should be covered by integration tests.
 
-Do not mock business rules.
+---
+
+# Performance
+
+The backend should:
+
+* Minimize unnecessary allocations
+* Avoid duplicate work
+* Stream data when practical
+* Clean temporary resources
+* Prefer efficient processing paths
+
+Performance optimizations should never compromise readability.
 
 ---
 
@@ -537,22 +441,23 @@ Do not mock business rules.
 
 When generating backend code:
 
-* Keep layers isolated.
-* Preserve dependency direction.
-* Reuse existing services.
-* Keep business logic inside the Domain layer.
-* Treat Sources as interchangeable providers.
-* Keep media processing Source-independent.
-* Never execute external tools outside dedicated wrappers.
+* Keep services focused.
+* Preserve layer boundaries.
+* Use generic models.
+* Keep source-specific logic inside the Source layer.
+* Keep FFmpeg inside the Media layer.
+* Avoid global state.
+* Prefer explicit dependencies.
+* Reuse existing services before introducing new ones.
 
 ---
 
 # Backend Philosophy
 
-The backend exists to orchestrate workflows, not to expose implementation details.
+The backend owns the application's intelligence.
 
-Source-specific logic ends at the Source Layer.
+It is responsible for understanding video sources, processing media, coordinating workflows, and exposing a clean interface to the frontend.
 
-From that point forward, the application works exclusively with generic media and business models.
+The frontend should request actions.
 
-A clean backend is one where replacing a video provider does not affect the rest of the application.
+The backend should decide how those actions are performed.

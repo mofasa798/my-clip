@@ -6,9 +6,9 @@ This document defines the long-term development roadmap for the project.
 
 The roadmap is organized around architectural milestones rather than individual features.
 
-Each phase should produce a stable foundation for the next phase.
+Each milestone establishes a stable foundation for the next stage of development.
 
-Implementation should always follow the roadmap unless explicitly overridden.
+Detailed implementation tasks belong in `05_SPRINT.md`.
 
 ---
 
@@ -16,244 +16,231 @@ Implementation should always follow the roadmap unless explicitly overridden.
 
 Development should prioritize:
 
-* Strong foundations
+* Strong architectural foundations
 * Incremental delivery
-* Stable architecture
-* Small iterations
+* Stable abstractions
+* Small iterative improvements
 * Continuous validation
 
 Avoid implementing future features before their prerequisites exist.
 
 ---
 
-# Phase Overview
+# Roadmap Overview
 
-```text id="w6u1ja"
-Phase 1
-
+```text
+Milestone 1
 Project Foundation
-
-↓
-
-Phase 2
-
+        │
+        ▼
+Milestone 2
 Source Layer
-
-↓
-
-Phase 3
-
+        │
+        ▼
+Milestone 3
 Media Pipeline
-
-↓
-
-Phase 4
-
-User Interface
-
-↓
-
-Phase 5
-
-Application Features
-
-↓
-
-Phase 6
-
+        │
+        ▼
+Milestone 4
+Desktop Experience
+        │
+        ▼
+Milestone 5
+Workflow Enhancement
+        │
+        ▼
+Milestone 6
 Stabilization & Release
 ```
 
-Each phase depends on the previous one.
+Each milestone depends on the successful completion of the previous one.
 
 ---
 
-# Phase 1 — Project Foundation
+# Milestone 1 — Project Foundation
 
-Objective
+## Objective
 
-Create a maintainable project foundation.
+Establish a stable and maintainable project foundation.
 
-Deliverables
+## Deliverables
 
 * Repository structure
 * Wails v3 setup
 * React + TypeScript setup
 * Go backend setup
+* Development tooling
 * Build configuration
-* Application startup
-* Dependency verification
 * Logging
-* Settings management
+* Configuration management
 * Event infrastructure
 
-Success Criteria
+## Success Criteria
 
-* Application launches successfully.
-* Frontend communicates with backend.
-* Dependencies are detected correctly.
-* Development environment is stable.
+* The application launches successfully.
+* Frontend communicates with the backend.
+* Development environment is fully operational.
+* Project structure follows the documented architecture.
 
 ---
 
-# Phase 2 — Source Layer
+# Milestone 2 — Source Layer
 
-Objective
+## Objective
 
-Create a source-independent abstraction for supported video providers.
+Implement a source-agnostic architecture for supported video sources.
 
-Deliverables
+## Deliverables
 
 * Source interface
 * Source resolver
-* URL detection
-* URL validation
-* Video metadata model
-* Stream information model
-* Adapter registration
+* Source registry
+* Generic metadata models
+* Generic stream models
 * YouTube adapter
 * Kick adapter
 
-Success Criteria
+## Success Criteria
 
-* Supported Sources are detected automatically.
-* Metadata can be retrieved consistently.
-* Source implementations remain isolated.
-* Core services do not depend on Source-specific logic.
+* Supported sources are detected automatically.
+* Metadata retrieval is consistent.
+* Download workflow is source-independent.
+* Adding a new source requires only a new adapter.
 
 ---
 
-# Phase 3 — Media Pipeline
+# Milestone 3 — Media Pipeline
 
-Objective
+## Objective
 
-Build the complete local media processing pipeline.
+Build a reliable local media processing pipeline.
 
-Deliverables
+## Deliverables
 
-* Download workflow
+* Download pipeline
 * Local media storage
-* FFprobe wrapper
-* FFmpeg wrapper
-* GPU detection
-* Stream Copy export
+* FFprobe integration
+* FFmpeg integration
+* Hardware capability detection
+* Stream Copy support
 * GPU encoding
 * CPU fallback
-* Progress reporting
-* Export pipeline
+* Export progress reporting
 
-Success Criteria
+## Success Criteria
 
-* Videos download successfully.
+* Media downloads reliably.
 * Clips export correctly.
-* GPU acceleration works when available.
-* CPU fallback behaves reliably.
+* Hardware acceleration is used when available.
+* Software encoding remains a reliable fallback.
 
 ---
 
-# Phase 4 — User Interface
+# Milestone 4 — Desktop Experience
 
-Objective
+## Objective
 
-Create a complete desktop experience.
+Create a polished desktop user experience.
 
-Deliverables
+## Deliverables
 
 * Home page
-* Metadata display
+* Editor page
+* Timeline
 * Video preview
-* Timeline editor
+* Settings
 * Export panel
-* Progress display
-* Settings page
+* Progress reporting
 * History page
 * Theme support
 
-Success Criteria
+## Success Criteria
 
-* Users can complete the primary workflow.
-* Timeline interaction is responsive.
-* Progress updates are reliable.
-* UI remains responsive during long operations.
+* Users can complete the full clipping workflow.
+* The interface remains responsive during long-running operations.
+* Timeline interaction is smooth.
 
 ---
 
-# Phase 5 — Application Features
+# Milestone 5 — Workflow Enhancement
 
-Objective
+## Objective
 
-Improve usability and workflow efficiency.
+Improve productivity and usability.
 
-Deliverables
+## Deliverables
 
 * Export presets
-* Recent projects
 * Download history
 * Export history
 * Keyboard shortcuts
-* Output management
-* Error recovery
 * Improved validation
+* Better error recovery
+* Output management
 
-Success Criteria
+## Success Criteria
 
-* Daily workflows become faster.
-* Configuration is easier to manage.
-* Frequently used actions require fewer steps.
+* Common workflows require fewer manual steps.
+* Repeated tasks become faster.
+* Configuration becomes easier to manage.
 
 ---
 
-# Phase 6 — Stabilization & Release
+# Milestone 6 — Stabilization & Release
 
-Objective
+## Objective
 
-Prepare the application for long-term use.
+Prepare the application for long-term daily use.
 
-Deliverables
+## Deliverables
 
 * Performance optimization
 * Memory optimization
-* Error handling improvements
-* Test coverage improvements
+* Improved error handling
+* Expanded test coverage
 * Documentation review
 * Packaging
 * Installer
 * Release build
 
-Success Criteria
+## Success Criteria
 
 * Stable long-running operation.
 * Reliable export performance.
 * Consistent user experience.
-* Ready for production use.
+* Production-ready desktop application.
 
 ---
 
 # Feature Priority
 
-Priority order:
+Development priority should always follow:
 
-```text id="4qnn7t"
-Core Architecture
-
-↓
-
-Source Support
+```text
+Architecture
 
 ↓
 
-Media Processing
+Source Layer
 
 ↓
 
-User Experience
+Media Pipeline
 
 ↓
 
-Convenience Features
+Desktop Experience
+
+↓
+
+Workflow Improvements
+
+↓
+
+Quality & Release
 ```
 
-Never prioritize convenience features over core functionality.
+Convenience features should never take priority over architectural stability.
 
 ---
 
@@ -263,29 +250,29 @@ The following are intentionally excluded from the current roadmap:
 
 * Cloud synchronization
 * User accounts
-* Online editing
-* Collaborative features
+* Collaborative editing
+* Remote media processing
 * Video uploading
 * Plugin system
-* Mobile application
+* Mobile applications
 
-These may be considered only after the core application is mature.
+These may be considered in future major versions.
 
 ---
 
 # Future Expansion
 
-Possible future phases:
+Potential future milestones include:
 
-* Additional source adapters
-* AV1 encoding
-* Hardware decoding
+* Additional Source Adapters
 * Batch processing
-* Advanced timeline editing
+* Hardware decoding
+* AV1 encoding
+* Subtitle support
 * Waveform visualization
-* Subtitle editing
+* Advanced timeline editing
 
-Future work should preserve the existing architecture.
+Future work should preserve the established architecture.
 
 ---
 
@@ -293,20 +280,30 @@ Future work should preserve the existing architecture.
 
 When planning or implementing work:
 
-* Complete one phase before starting the next.
-* Avoid skipping architectural milestones.
-* Respect dependency order.
-* Build reusable foundations.
-* Do not implement speculative features.
+* Complete milestones sequentially.
+* Build stable foundations before adding features.
+* Avoid speculative implementations.
+* Respect documented architectural boundaries.
+* Keep the project source-agnostic.
 
-If a requested feature depends on unfinished work, implement the prerequisite first.
+If a requested feature depends on an unfinished milestone, complete the prerequisite first.
+
+---
+
+# Relationship to Sprint Planning
+
+This roadmap defines **what** the project aims to achieve.
+
+`05_SPRINT.md` defines **what is currently being built**.
+
+The roadmap should change infrequently.
+
+Sprint planning should evolve continuously throughout development.
 
 ---
 
 # Roadmap Philosophy
 
-The roadmap prioritizes architecture over features.
+The roadmap exists to guide long-term development, not daily implementation.
 
-A stable foundation enables faster feature development and easier long-term maintenance.
-
-Every completed phase should leave the project in a usable, testable, and extensible state.
+A stable architecture enables faster iteration, simpler maintenance, and easier expansion as new video sources and capabilities are added over time.

@@ -2,381 +2,192 @@
 
 # Project Structure
 
-This document defines the physical organization of the project.
+This document defines the directory structure and organization of the project.
 
-Its purpose is to provide a predictable structure for both developers and AI assistants.
+Every file should have a clear and predictable location.
 
-Every directory should have a single, well-defined responsibility.
-
----
-
-# Design Principles
-
-The project structure should be:
-
-* Domain-oriented
-* Source-agnostic
-* Easy to navigate
-* Easy to extend
-* Consistent
-
-Avoid unnecessary nesting.
-
-Avoid generic folders.
+The project structure reflects the architectural boundaries described in `02_ARCHITECTURE.md`.
 
 ---
 
-# Top-Level Structure
+# Project Layout
 
 ```text
 project/
 
-.contexts/
-docs/
-
-backend/
-frontend/
-
-bin/
-storage/
-scripts/
-
-go.mod
-package.json
-README.md
+├── backend/
+│   ├── main.go
+│   ├── go.mod
+│   ├── go.sum
+│   └── internal/
+│       ├── app/
+│       ├── domain/
+│       ├── source/
+│       │   ├── resolver/
+│       │   ├── registry/
+│       │   ├── youtube/
+│       │   └── kick/
+│       ├── media/
+│       │   ├── ffmpeg/
+│       │   ├── ffprobe/
+│       │   └── gpu/
+│       ├── system/
+│       └── shared/
+│
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   ├── stores/
+│   │   ├── types/
+│   │   ├── constants/
+│   │   └── assets/
+│   └── package.json
+│
+├── docs/
+│   ├── backend.md
+│   ├── frontend.md
+│   ├── sources.md
+│   ├── ffmpeg.md
+│   ├── gpu.md
+│   ├── ui.md
+│   └── design_system.md
+│
+├── .contexts/
+│   ├── INDEX.md
+│   ├── 00_PROJECT.md
+│   ├── 01_RULES.md
+│   ├── 02_ARCHITECTURE.md
+│   ├── 03_ROADMAP.md
+│   ├── 04_DECISIONS.md
+│   ├── 05_SPRINT.md
+│   ├── 06_PROMPT.md
+│   ├── 07_CODE_STYLE.md
+│   ├── 08_PROJECT_STRUCTURE.md
+│   └── 09_TESTING.md
+│
+└── README.md
 ```
-
----
-
-# Directory Overview
-
-## .contexts
-
-Engineering documentation for AI and developers.
-
-Contains:
-
-* Project rules
-* Architecture
-* Roadmap
-* ADR
-* Sprint
-* Code style
-* Testing
-
-No source code.
-
----
-
-## docs
-
-Technical documentation.
-
-Examples:
-
-* backend.md
-* frontend.md
-* ffmpeg.md
-* gpu.md
-* Source.md
-* ui.md
-* design_system.md
-
----
-
-## backend
-
-Contains the complete Go application.
-
-All business logic lives here.
-
----
-
-## frontend
-
-Contains the React application.
-
-Presentation only.
-
----
-
-## bin
-
-External executables.
-
-Examples:
-
-```text
-ffmpeg
-ffprobe
-yt-dlp
-```
-
-Source-specific binaries may be organized into subdirectories.
-
----
-
-## storage
-
-Application data.
-
-Examples:
-
-```text
-settings/
-history/
-cache/
-exports/
-temp/
-logs/
-```
-
-Generated files should never be committed.
-
----
-
-## scripts
-
-Development utilities.
-
-Examples:
-
-* build
-* release
-* clean
 
 ---
 
 # Backend Structure
 
-```text
-backend/
+The backend is organized by architectural responsibility.
 
-main.go
+## app/
 
-internal/
+Application bootstrap.
 
-    app/
-
-    domain/
-
-        clip/
-        download/
-        history/
-        settings/
-
-    Source/
-
-        resolver/
-
-        adapters/
-
-            youtube/
-            kick/
-
-    media/
-
-        ffmpeg/
-        ffprobe/
-        gpu/
-
-    system/
-
-        filesystem/
-        logger/
-        worker/
-
-    shared/
-```
-
-The backend is organized by architectural boundaries rather than implementation details.
-
----
-
-# Backend Responsibilities
-
-## app
-
-Application lifecycle.
+Responsibilities:
 
 * Startup
 * Shutdown
-* Dependency initialization
-* Service registration
+* Dependency wiring
+* Wails integration
+
+No business logic belongs here.
 
 ---
 
-## domain
+## domain/
 
-Core business logic.
-
-Contains:
-
-* Clip creation
-* Download workflow
-* Settings
-* History
-
-The domain layer must never depend on Source-specific implementations.
-
----
-
-## Source
-
-Responsible for supported video Sources.
-
-Contains:
-
-* Source detection
-* URL validation
-* Metadata retrieval
-* Stream discovery
-* Media download
-
-Each supported Source implements the same interface.
+Business models and workflows.
 
 Examples:
 
-```text
-youtube/
-kick/
-```
+* Clip
+* Export
+* History
+* Settings
 
-Future Sources should be added here.
+The Domain Layer contains the application's core business rules.
 
 ---
 
-## media
+## source/
 
-Responsible for local media operations.
+Responsible for online video sources.
+
+Contains:
+
+* Source Resolver
+* Source Registry
+* Source implementations
+
+Example:
+
+```text
+source/
+
+resolver/
+
+registry/
+
+youtube/
+
+kick/
+```
+
+Every source implements the same interface.
+
+---
+
+## media/
+
+Responsible for local media processing.
 
 Contains:
 
 * FFmpeg wrapper
 * FFprobe wrapper
-* GPU detection
-* Media inspection
-* Export pipeline
+* GPU support
+* Media utilities
 
-The media layer never communicates directly with online Sources.
+This layer never communicates with online video sources.
 
 ---
 
-## system
+## system/
 
-Responsible for operating system interaction.
+Operating system integration.
 
-Contains:
+Examples:
 
 * File system
+* Configuration
 * Logging
-* Background workers
+* External processes
+* Temporary files
 
-System services should remain reusable.
+Infrastructure concerns belong here.
 
 ---
 
-## shared
+## shared/
 
-Small reusable utilities.
+Reusable components shared across multiple layers.
 
-Allowed:
+Examples:
 
-* Constants
-* Shared types
-* Small helper functions
+* Utilities
+* Generic helpers
+* Common value objects
+* Shared constants
 
-Forbidden:
-
-* Business logic
-* Source logic
-* FFmpeg execution
+Do not place business logic here.
 
 ---
 
 # Frontend Structure
 
-```text
-frontend/
+The frontend follows feature-oriented organization.
 
-src/
+## pages/
 
-assets/
-components/
-constants/
-hooks/
-layouts/
-pages/
-services/
-stores/
-types/
-utils/
-```
-
-The frontend should remain shallow.
-
-Avoid deeply nested folders.
-
----
-
-# Frontend Responsibilities
-
-## assets
-
-Static resources.
-
-* Images
-* Icons
-* Fonts
-
----
-
-## components
-
-Reusable UI components.
-
-Examples:
-
-* Timeline
-* ProgressBar
-* VideoPreview
-* MetadataCard
-
----
-
-## constants
-
-Application constants.
-
-Examples:
-
-* Event names
-* Default values
-* Theme tokens
-
----
-
-## hooks
-
-Reusable React hooks.
-
-Examples:
-
-* useDownload
-* useTimeline
-* useExport
-
----
-
-## layouts
-
-Shared page layouts.
-
----
-
-## pages
-
-Top-level application pages.
+Top-level application screens.
 
 Examples:
 
@@ -387,231 +198,223 @@ Examples:
 
 ---
 
-## services
+## components/
 
-Frontend communication layer.
+Reusable UI components.
 
-Responsible for:
+Examples:
 
-* Wails bindings
-* Backend communication
+* Button
+* Card
+* Dialog
+* Timeline
+* ProgressBar
 
-No business logic.
+Components should remain small and composable.
 
 ---
 
-## stores
+## hooks/
 
-Global UI state.
+Reusable React hooks.
+
+Examples:
+
+* useTimeline
+* useExport
+* useVideoPlayer
+
+Hooks manage UI behavior only.
+
+---
+
+## services/
+
+Frontend communication with the backend.
+
+Responsibilities:
+
+* Wails bindings
+* Event subscriptions
+* Request mapping
+
+Business logic belongs in the backend.
+
+---
+
+## stores/
+
+Global application state.
 
 Examples:
 
 * Theme
-* Sidebar state
-* Current page
+* UI state
+* Export progress
 
-Business state belongs in the backend.
-
----
-
-## types
-
-Shared TypeScript types.
+Avoid storing business logic.
 
 ---
 
-## utils
+## types/
 
-Small utility functions.
+Shared TypeScript models.
 
-No business logic.
-
----
-
-# Source Adapter Structure
-
-Every supported Source should follow the same structure.
-
-Example:
-
-```text
-Source/
-
-adapters/
-
-    youtube/
-
-        adapter.go
-        metadata.go
-        download.go
-
-    kick/
-
-        adapter.go
-        metadata.go
-        download.go
-```
-
-This consistency simplifies future Source additions.
+These should mirror backend models whenever practical.
 
 ---
 
-# Data Storage Structure
+## constants/
 
-```text
-storage/
+Application constants.
 
-cache/
-exports/
-history/
-logs/
-settings/
-temp/
-```
+Examples:
 
-Each directory has a single responsibility.
+* Routes
+* Event names
+* UI configuration
 
 ---
 
-# Folder Creation Rules
+## assets/
 
-Before creating a new folder:
+Static frontend assets.
 
-Ask:
+Examples:
 
-* Does an existing folder already fit?
-* Will the new folder contain multiple related files?
-* Does it represent a new domain?
-
-If the answer is "No", do not create it.
+* Icons
+* Images
+* Fonts
 
 ---
 
-# File Creation Rules
+# Documentation Structure
 
-Create new files only when:
+## .contexts/
 
-* Responsibility changes.
-* Reuse justifies separation.
-* File size becomes difficult to maintain.
+Defines project standards.
 
-Avoid speculative files.
+These documents guide both developers and AI.
+
+They represent the project's engineering rules and architectural decisions.
+
+---
+
+## docs/
+
+Contains implementation-specific documentation.
+
+Examples:
+
+* Backend
+* Frontend
+* Source Layer
+* FFmpeg
+* GPU
+* UI
+
+These documents explain how individual subsystems work.
 
 ---
 
 # Naming Conventions
 
-Folders
+Directories use:
 
 * lowercase
+* singular nouns
+* descriptive names
 
-Files
+Examples:
 
-* lowercase_with_underscores
+```text
+source/
 
-Packages
+media/
 
-* singular
+domain/
 
-React Components
+system/
+```
 
-* PascalCase
+Avoid:
 
-Hooks
+```text
+sources/
 
-* useSomething
+platform/
 
-Interfaces
+modules/
 
-* Descriptive names
-
-Avoid generic names such as:
-
-* Helper
-* Manager
-* Common
-* UtilsService
+misc/
+```
 
 ---
 
-# Dependency Rules
+# Package Organization
 
-Allowed:
+Prefer domain-oriented packages.
 
-```text
-Frontend
-
-↓
-
-Application
-
-↓
-
-Domain
-
-↓
-
-Source
-
-↓
-
-Media
-
-↓
-
-System
-```
-
-Dependencies always point downward.
-
-Forbidden:
+Good:
 
 ```text
-Source
+clip/
 
-↓
+history/
 
-React
+settings/
+
+source/
 ```
 
-Forbidden:
+Avoid:
 
 ```text
-Media
+manager/
 
-↓
+controller/
 
-Source Adapter
+handler/
+
+helper/
 ```
 
-Forbidden:
+---
 
-```text
-System
+# File Organization
 
-↓
+Every file should have a single responsibility.
 
-Domain
-```
+Avoid extremely large files.
 
-Lower layers must never depend on higher layers.
+Recommended limits:
+
+* Go files: approximately 300–500 lines
+* React components: approximately 200–300 lines
+
+Split files when responsibilities grow.
 
 ---
 
 # Future Expansion
 
-Adding a new Source should require only:
+Adding a new source should require only:
 
-1. Create a new adapter.
-2. Register it in the Source Resolver.
+```text
+source/
 
-No changes should be required to:
+vimeo/
+```
 
-* Clip
-* Export
-* FFmpeg
-* GPU
-* UI
+or
+
+```text
+source/
+
+twitch/
+```
+
+No structural changes should be required elsewhere.
 
 ---
 
@@ -619,23 +422,19 @@ No changes should be required to:
 
 When generating code:
 
-* Follow the defined directory structure.
-* Reuse existing packages.
-* Keep responsibilities focused.
-* Avoid creating generic folders.
+* Follow the documented directory structure.
 * Respect architectural boundaries.
-* Keep Source implementations isolated.
-
-Never reorganize the project without explicit approval.
+* Do not create alternative directory layouts.
+* Reuse existing packages whenever possible.
+* Keep packages focused on a single responsibility.
+* Prefer extending existing domains over creating new top-level folders.
 
 ---
 
 # Project Structure Philosophy
 
-The directory structure reflects the architecture.
+A predictable structure reduces cognitive load.
 
-Every folder should have an obvious responsibility.
+Every directory should communicate its purpose immediately.
 
-If a file has no obvious location, improve the structure instead of creating a miscellaneous folder.
-
-A predictable structure is more valuable than a clever one.
+Developers and AI should be able to determine where new code belongs without introducing new architectural patterns or unnecessary complexity.

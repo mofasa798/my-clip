@@ -2,51 +2,51 @@
 
 # System Architecture
 
-This document defines the high-level architecture of the application.
+This document defines the architectural foundations of the application.
 
-Its purpose is to establish clear responsibilities, dependency boundaries, and communication flow between all major components.
+The architecture prioritizes simplicity, maintainability, extensibility, and clear separation of responsibilities.
 
-The architecture is designed to be source-agnostic, modular, and easy to extend.
+The system is designed around **generic media workflows**, not individual video sources.
 
 ---
 
 # Architecture Principles
 
-The application follows these principles:
+The architecture follows these principles:
 
-* Source-independent
+* Source-agnostic
 * Layered architecture
-* Single responsibility
+* Domain-driven workflows
+* Local-first processing
 * Explicit dependencies
-* Local-first execution
 * Composition over inheritance
 * Simplicity over abstraction
 
-Every layer should have one clear purpose.
+Every layer owns a single responsibility.
 
 ---
 
 # High-Level Architecture
 
-```text id="0c6xra"
-                 User Interface
-                       │
-                       ▼
-              Application Layer
-                       │
-                       ▼
-               Source Layer
-                       │
-                       ▼
-            Media Processing Layer
-                       │
-                       ▼
-                System Layer
+```text
+                  User Interface
+                         │
+                         ▼
+                Application Layer
+                         │
+                         ▼
+                   Domain Layer
+                  ┌─────────────┐
+                  ▼             ▼
+             Source Layer   Media Layer
+                  └──────┬──────┘
+                         ▼
+                    System Layer
 ```
 
-Dependencies always point downward.
+Business logic belongs to the Domain Layer.
 
-No layer may bypass another.
+Infrastructure details belong to the lower layers.
 
 ---
 
@@ -57,11 +57,11 @@ No layer may bypass another.
 Responsible for:
 
 * User interaction
+* Navigation
 * Timeline editing
 * Video preview
-* Progress display
-* Settings
-* Navigation
+* Progress visualization
+* Settings pages
 
 The UI never owns business logic.
 
@@ -69,52 +69,72 @@ The UI never owns business logic.
 
 ## Application Layer
 
-Coordinates application workflows.
+Responsible for coordinating application use cases.
+
+Examples:
+
+* Start download
+* Create clip
+* Export media
+* Load settings
+* Restore history
+
+The Application Layer orchestrates workflows but should contain minimal business rules.
+
+---
+
+## Domain Layer
+
+The Domain Layer is the heart of the application.
 
 Responsibilities:
 
-* Clip creation
-* Export workflow
-* Download workflow
-* Settings management
-* History management
-* Progress orchestration
+* Business rules
+* Workflow orchestration
+* Validation
+* Generic media models
+* Export requests
+* Clip requests
 
-The Application Layer coordinates services but does not implement source-specific behavior.
+The Domain Layer must never depend on any specific video source.
 
 ---
 
 ## Source Layer
 
-The Source Layer isolates every supported video source.
+Responsible for interacting with supported online video sources.
 
 Responsibilities:
 
-* Detect source
-* Validate URL
-* Retrieve metadata
-* Retrieve available streams
-* Download media
+* Source detection
+* URL validation
+* Metadata retrieval
+* Stream discovery
+* Media download
 
-The rest of the application must never communicate directly with source implementations.
+Examples:
+
+* YouTube
+* Kick
+
+After download completes, source-specific behavior ends.
 
 ---
 
-## Media Processing Layer
+## Media Layer
 
-Responsible for local media processing.
+Responsible for processing local media.
 
 Responsibilities:
 
-* Clip extraction
-* Video encoding
-* Stream copy
-* GPU acceleration
-* Metadata inspection
+* FFmpeg wrapper
+* FFprobe wrapper
+* Hardware detection
+* Clip generation
+* Export pipeline
+* Media inspection
 
-This layer operates only on local media.
-
-It does not know where the media originated.
+The Media Layer only works with local media files.
 
 ---
 
@@ -130,110 +150,44 @@ Examples:
 * Configuration
 * Background workers
 
----
-
-# Dependency Flow
-
-```text id="lrbhtf"
-React UI
-
-↓
-
-Application Services
-
-↓
-
-Source Services
-
-↓
-
-Media Services
-
-↓
-
-System Services
-
-↓
-
-Operating System
-```
-
-Communication must always follow this direction.
+No business logic belongs here.
 
 ---
 
-# Source Architecture
+# Dependency Rules
 
-The application should support multiple sources through adapters.
+Allowed:
 
-```text id="wwb55u"
-Video URL
-
-↓
-
-Source Resolver
+```text
+UI
 
 ↓
 
-Source Adapter
+Application
 
 ↓
 
-Generic Video Source
-```
+Domain
 
-Every supported source should expose the same capabilities.
-
----
-
-# Source Adapter
-
-Each adapter should implement the same interface.
-
-Responsibilities:
-
-* URL validation
-* Metadata retrieval
-* Stream discovery
-* Download support
-
-Source adapters should not contain business logic.
-
----
-
-# Generic Video Source
-
-Once a video has been resolved, it becomes a generic media source.
-
-Example model:
-
-```text id="u4m3ax"
-VideoMetadata
+↓
 
 Source
+Media
 
-Title
+↓
 
-Author
-
-Duration
-
-Thumbnail
-
-Streams
-
-Live
-
-URL
+System
 ```
 
-Higher layers should only consume this model.
+Dependencies always point downward.
+
+Lower layers must never depend on higher layers.
 
 ---
 
-# Download Pipeline
+# Source Workflow
 
-```text id="rmfjnv"
+```text
 Video URL
 
 ↓
@@ -246,29 +200,33 @@ Source Adapter
 
 ↓
 
-Download Service
+Video Metadata
 
 ↓
 
-Local Media File
+Download
+
+↓
+
+Local Media
 ```
 
-The Download Service never knows which source provided the media.
+After this point, the source becomes an implementation detail.
 
 ---
 
-# Clip Pipeline
+# Media Workflow
 
-```text id="lya9v2"
-Local Media File
-
-↓
-
-Timeline
+```text
+Local Media
 
 ↓
 
-Clip Service
+FFprobe
+
+↓
+
+Clip Request
 
 ↓
 
@@ -276,18 +234,18 @@ FFmpeg
 
 ↓
 
-Exported Clip
+Export
 ```
 
-The Clip Pipeline operates exclusively on local files.
+Media processing is completely independent of the originating source.
 
 ---
 
-# Export Pipeline
+# Export Strategy
 
-Preferred processing strategy:
+Preferred processing order:
 
-```text id="xgcrki"
+```text
 Stream Copy
 
 ↓
@@ -299,63 +257,119 @@ GPU Encoding
 CPU Encoding
 ```
 
-The Export Pipeline is completely source-independent.
+The application should always select the fastest available strategy.
 
 ---
 
-# Source Independence
+# Hardware Strategy
 
-Source-specific logic ends after download.
+The application should never assume a specific hardware configuration.
 
-Everything beyond this point operates on generic local media.
+At runtime it should automatically detect available capabilities.
 
-This separation is mandatory.
+Preferred order:
 
----
+```text
+Stream Copy Available
 
-# Backend Structure
+↓
 
-```text id="31odlu"
-backend/internal/
+Yes
 
-app/
+↓
 
-domain/
-    clip/
-    download/
-    history/
-    settings/
+Stream Copy
 
-source/
-    resolver/
-    adapters/
+↓
 
-media/
-    ffmpeg/
-    ffprobe/
-    gpu/
+No
 
-system/
-    logger/
-    worker/
-    filesystem/
+↓
+
+Hardware Encoder Available
+
+↓
+
+Yes
+
+↓
+
+GPU Encoding
+
+↓
+
+No
+
+↓
+
+CPU Encoding
 ```
 
-Each directory represents a distinct architectural boundary.
+Hardware capabilities determine processing strategy.
 
 ---
 
-# Frontend Structure
+# Backend Architecture
 
-```text id="tezzjp"
-frontend/src/
+Recommended structure:
+
+```text
+backend/
+
+main.go
+
+internal/
+
+    app/
+
+    domain/
+
+    source/
+
+        resolver/
+
+        registry/
+
+        adapters/
+
+    media/
+
+        ffmpeg/
+
+        ffprobe/
+
+        gpu/
+
+    system/
+
+    shared/
+```
+
+Each directory represents an architectural boundary.
+
+---
+
+# Frontend Architecture
+
+Recommended structure:
+
+```text
+frontend/
+
+src/
 
 pages/
+
 components/
+
 hooks/
+
 services/
+
 stores/
+
 types/
+
 constants/
 ```
 
@@ -365,32 +379,32 @@ The frontend remains presentation-focused.
 
 # Data Flow
 
-```text id="k44ks4"
-User Action
+```text
+User
 
 ↓
 
-UI
+React UI
 
 ↓
 
-Application Service
+Application
 
 ↓
 
-Source Layer
+Domain
 
 ↓
 
-Download
+Source
 
 ↓
 
-Local File
+Local Media
 
 ↓
 
-Media Processing
+Media
 
 ↓
 
@@ -407,7 +421,7 @@ Every workflow should follow this pattern.
 
 # Event Flow
 
-```text id="pm0g7g"
+```text
 Backend
 
 ↓
@@ -424,18 +438,18 @@ React State
 
 ↓
 
-UI Update
+UI
 ```
 
-The frontend should never poll backend progress.
+The frontend should react to backend events rather than polling.
 
 ---
 
 # Error Flow
 
-Errors should propagate upward.
+Errors propagate upward.
 
-```text id="mddjlwm"
+```text
 System
 
 ↓
@@ -445,6 +459,10 @@ Media
 ↓
 
 Source
+
+↓
+
+Domain
 
 ↓
 
@@ -455,80 +473,37 @@ Application
 User Interface
 ```
 
-Every layer should enrich errors with useful context.
+Each layer should add meaningful context without exposing implementation details.
 
 ---
 
 # Extension Strategy
 
-Adding a new source should require only:
+Adding support for a new source should require only:
 
-1. Creating a new Source Adapter.
-2. Registering it in the Source Resolver.
+1. Implement a Source Adapter.
+2. Register the adapter.
+3. Verify metadata retrieval.
+4. Verify download.
 
 No changes should be required in:
 
-* Clip Service
-* Export Service
-* FFmpeg Wrapper
-* GPU Module
+* Domain
+* Media Layer
+* Export pipeline
 * UI
 
 ---
 
-# Dependency Rules
+# Architectural Constraints
 
-Allowed:
+The application must never:
 
-```text id="7kqfjb"
-Application
-
-↓
-
-Source
-
-↓
-
-Media
-
-↓
-
-System
-```
-
-Forbidden:
-
-```text id="svf3qv"
-Source
-
-↓
-
-React
-```
-
-Forbidden:
-
-```text id="kqzsz8"
-FFmpeg
-
-↓
-
-Source Adapter
-```
-
-Lower layers must never depend on higher layers.
-
----
-
-# Future Expansion
-
-The architecture should support future sources such as:
-
-* Twitch
-* Vimeo
-* Other online video providers
-
-without requiring changes to the application's core workflows.
+* Mix source logic with media processing.
+* Execute external binaries outside dedicated wrappers.
+* Place business logic in the frontend.
+* Couple the Domain Layer to any specific source.
+* Bypass architectural boundaries.
 
 ---
 
@@ -536,21 +511,22 @@ without requiring changes to the application's core workflows.
 
 When generating architecture-related code:
 
-* Keep source logic isolated.
-* Keep media processing source-independent.
+* Keep business logic inside the Domain Layer.
+* Keep source implementations isolated.
+* Treat media processing as source-independent.
 * Prefer explicit interfaces.
 * Avoid unnecessary abstractions.
-* Follow the defined dependency flow.
-* Never bypass architectural boundaries.
+* Respect dependency direction.
+* Preserve architectural boundaries.
 
 ---
 
 # Architecture Philosophy
 
-The architecture is centered around **generic video sources**, not individual sources.
+The application is designed around **generic media workflows**.
 
-Sources are interchangeable implementations.
+Video sources are interchangeable implementations.
 
-The core application should only understand media, workflows, and user actions.
+Once media has been downloaded, its origin is no longer relevant.
 
-A new source should integrate by implementing the Source Adapter, while the rest of the application remains unchanged.
+The architecture should make adding a new source inexpensive while keeping the core application stable, predictable, and easy to maintain.

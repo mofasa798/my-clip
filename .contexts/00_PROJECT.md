@@ -10,11 +10,11 @@ Multi-Platform Video Clipper
 
 # Vision
 
-Build a fast, reliable, and easy-to-use desktop application that allows users to download, preview, clip, and export videos from supported online sources.
+Build a fast, reliable, and intuitive desktop application for downloading, previewing, clipping, and exporting videos from multiple online video sources.
 
-The application should provide a consistent user experience regardless of the original video source.
+The application should provide a consistent user experience regardless of where the video originates.
 
-All source-specific implementations must remain isolated from the core application.
+Source-specific implementations must remain isolated from the rest of the application.
 
 ---
 
@@ -24,11 +24,13 @@ Develop a local-first desktop application capable of:
 
 * Detecting supported video sources
 * Retrieving video metadata
-* Downloading videos
-* Creating high-quality clips
-* Exporting clips efficiently using GPU acceleration whenever possible
+* Downloading media
+* Previewing videos
+* Creating clips
+* Exporting clips efficiently
+* Utilizing hardware acceleration whenever available
 
-The application should prioritize performance, reliability, and simplicity.
+The application should prioritize performance, maintainability, and simplicity.
 
 ---
 
@@ -36,9 +38,10 @@ The application should prioritize performance, reliability, and simplicity.
 
 The project follows these principles:
 
-* Multi-platform by design
+* Multi-source by design
 * Source-agnostic architecture
 * Local-first processing
+* Capability-driven hardware support
 * Performance-oriented implementation
 * Simple and maintainable codebase
 * Minimal dependencies
@@ -48,46 +51,39 @@ The project follows these principles:
 
 # Supported Sources
 
-Current targets:
+Current supported sources:
 
 * YouTube
 * Kick
 
-Future expansion may include additional sources through the Source Adapter layer without requiring changes to the core application.
+Future sources should be added by implementing a new Source Adapter without requiring changes to the core application.
 
 ---
 
 # Primary Workflow
 
-```text id="q5r3ha"
+```text
 Paste Video URL
-
-↓
-
+        │
+        ▼
 Detect Source
-
-↓
-
+        │
+        ▼
 Load Metadata
-
-↓
-
-Download Video
-
-↓
-
+        │
+        ▼
+Download Media
+        │
+        ▼
 Preview Video
-
-↓
-
+        │
+        ▼
 Select Clip Range
-
-↓
-
+        │
+        ▼
 Export Clip
-
-↓
-
+        │
+        ▼
 Open Output Folder
 ```
 
@@ -97,54 +93,70 @@ Every feature should support this workflow.
 
 # Source Independence
 
-The application should never assume a specific video Source.
+The application should never assume a specific video source.
 
-After a URL has been resolved by the Source Layer, every video should be treated as a generic video source.
+After a URL has been resolved by the Source Layer, every video should be treated as a generic media source.
 
-The clipping, exporting, previewing, and processing pipelines must remain completely independent of the originating source.
+Clipping, previewing, processing, and exporting must remain completely independent of the originating source.
 
 ---
 
 # Target Environment
 
-Operating System
+## Execution Model
 
-* Windows (Primary)
+* Local desktop application
+* Offline-first media processing
+* No cloud services required
 
-Future support:
+## Operating Systems
+
+Primary target:
+
+* Windows
+
+Future targets:
 
 * Linux
 * macOS
 
-Desktop Framework
+## Desktop Framework
 
 * Wails v3
 
-Execution Model
+---
 
-* Local Desktop Application
+# Hardware Philosophy
 
-Cloud deployment is out of scope.
+The application should adapt to the user's hardware capabilities instead of requiring specific hardware models.
+
+Whenever possible, processing should automatically select the most efficient available method.
+
+Supported hardware acceleration includes:
+
+* NVIDIA NVENC
+* AMD AMF
+* Intel Quick Sync Video (QSV)
+
+If no hardware acceleration is available, the application must automatically fall back to software encoding.
 
 ---
 
-# Processing Philosophy
+# Processing Strategy
 
-Video processing should follow this priority:
+Preferred processing order:
 
-```text id="v1amhs"
+```text
 Stream Copy
-
-↓
-
+        │
+        ▼
 GPU Encoding
-
-↓
-
+        │
+        ▼
 CPU Encoding
 ```
 
-The application should always choose the fastest reliable processing strategy.
+The application should always choose the fastest reliable strategy.
 
 ---
 
@@ -152,12 +164,13 @@ The application should always choose the fastest reliable processing strategy.
 
 The application should:
 
-* Start quickly
-* Consume minimal memory
-* Keep the UI responsive
-* Utilize hardware acceleration when available
+* Launch quickly
+* Minimize memory usage
+* Keep the interface responsive
+* Detect hardware capabilities automatically
 * Avoid unnecessary processing
-* Handle large video files efficiently
+* Handle large media files efficiently
+* Maintain stable long-running operations
 
 ---
 
@@ -165,29 +178,25 @@ The application should:
 
 The application is divided into independent layers.
 
-```text id="yjlwmk"
+```text
 User Interface
-
-↓
-
+        │
+        ▼
 Application Layer
-
-↓
-
+        │
+        ▼
 Source Layer
-
-↓
-
-Media Processing Layer
-
-↓
-
+        │
+        ▼
+Media Layer
+        │
+        ▼
 System Layer
 ```
 
-Each layer has a single responsibility.
+Each layer has one clear responsibility.
 
-Source-specific logic must never leak into higher layers.
+Dependencies always point downward.
 
 ---
 
@@ -197,7 +206,7 @@ The application should provide:
 
 * Fast metadata retrieval
 * Responsive timeline editing
-* Smooth video preview
+* Smooth local video preview
 * Reliable downloads
 * Predictable exports
 * Clear progress reporting
@@ -209,24 +218,25 @@ Users should be able to create clips with minimal configuration.
 
 # Scope
 
-Included:
+## Included
 
-* Multi-platform video support
+* Multiple video sources
 * Metadata retrieval
-* Video downloading
-* Video preview
+* Media downloading
+* Local video preview
 * Clip creation
 * GPU-accelerated export
 * Export history
-* Configurable settings
+* User settings
 
-Excluded:
+## Excluded
 
-* Cloud services
+* Cloud synchronization
 * User accounts
+* Online editing
 * Video uploading
-* Collaborative editing
-* Online processing
+* Collaborative workflows
+* Remote media processing
 
 ---
 
@@ -235,12 +245,12 @@ Excluded:
 The project is considered successful when it can:
 
 * Detect supported sources automatically
-* Download videos reliably
+* Retrieve metadata consistently
+* Download media reliably
 * Export clips efficiently
-* Use GPU acceleration when available
-* Fall back gracefully to CPU encoding
-* Remain stable during long-running operations
-* Maintain a clean and understandable architecture
+* Utilize hardware acceleration when available
+* Fall back gracefully to software encoding
+* Maintain a clean and extensible architecture
 
 ---
 
@@ -248,9 +258,14 @@ The project is considered successful when it can:
 
 The application should remain easy to extend.
 
-Adding support for a new source should require implementing a new Source Adapter without modifying the clipping, processing, or export pipelines.
+Supporting a new video source should require only implementing a new Source Adapter and registering it with the Source Resolver.
 
-The core application should remain independent from any individual video source.
+No modifications should be required to:
+
+* Media processing
+* Clip creation
+* Export pipeline
+* User interface
 
 ---
 
@@ -258,8 +273,8 @@ The core application should remain independent from any individual video source.
 
 This project is not a YouTube clipper.
 
-It is a multi-platform desktop application for clipping online videos.
+It is a multi-platform desktop application for clipping videos from supported online sources.
 
-Source support is a replaceable implementation detail.
+Video sources are replaceable implementations.
 
-The core application should always remain source-agnostic, modular, and maintainable.
+The core application should always remain source-agnostic, modular, maintainable, and easy to extend.

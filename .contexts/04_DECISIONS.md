@@ -2,13 +2,11 @@
 
 # Architecture Decision Records (ADR)
 
-This document records permanent architectural decisions for the project.
+This document records the permanent architectural decisions for the project.
 
-These decisions should remain stable throughout development.
+Each ADR captures a significant design choice, its rationale, and the constraints it introduces.
 
-New decisions may be added over time.
-
-Existing decisions should only change when absolutely necessary.
+Accepted ADRs should remain stable throughout the lifetime of the project.
 
 ---
 
@@ -16,21 +14,21 @@ Existing decisions should only change when absolutely necessary.
 
 ## Source-Agnostic Architecture
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
 The application shall be source-agnostic.
 
-No core service may depend on a specific video source.
+The core application must never depend on a specific online video source.
 
-Source-specific logic must be isolated within the Source Layer.
+**Rationale**
 
-Reason
+Supporting a new video source should require only implementing a new Source Adapter.
 
-This allows new sources to be added without changing business logic.
+The application's business logic must remain unchanged.
 
 ---
 
@@ -38,13 +36,13 @@ This allows new sources to be added without changing business logic.
 
 ## Source Adapter Pattern
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-Every supported source must implement the same adapter interface.
+Every supported source must implement the same Source interface.
 
 Examples:
 
@@ -52,9 +50,9 @@ Examples:
 * Kick
 * Future sources
 
-Reason
+**Rationale**
 
-A consistent interface simplifies maintenance and future expansion.
+A consistent interface keeps source implementations isolated and simplifies future expansion.
 
 ---
 
@@ -62,35 +60,55 @@ A consistent interface simplifies maintenance and future expansion.
 
 ## Local-First Processing
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
 All media processing shall occur locally.
 
-The application does not rely on cloud services.
+No cloud services are required.
 
-Reason
+**Rationale**
 
-Local processing provides better privacy, lower latency, and predictable performance.
+Local processing provides predictable performance, improved privacy, and complete offline media processing after download.
 
 ---
 
 # ADR-004
 
-## Stream Copy First
+## Capability-Driven Hardware Support
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-The preferred export strategy is:
+The application shall detect hardware capabilities at runtime.
 
-```text id="mk6g0x"
+Processing strategy must depend on available capabilities rather than specific hardware models.
+
+**Rationale**
+
+The application should remain compatible with future hardware upgrades without requiring architectural changes.
+
+---
+
+# ADR-005
+
+## Processing Strategy
+
+**Status**
+
+Accepted
+
+**Decision**
+
+Preferred processing order:
+
+```text
 Stream Copy
 
 ↓
@@ -102,29 +120,9 @@ GPU Encoding
 CPU Encoding
 ```
 
-Reason
+**Rationale**
 
-Stream Copy provides the fastest export while preserving quality.
-
----
-
-# ADR-005
-
-## GPU as an Optimization
-
-Status
-
-Accepted
-
-Decision
-
-GPU acceleration is optional.
-
-The application must continue functioning when GPU acceleration is unavailable.
-
-Reason
-
-Correctness is more important than performance.
+Always prefer the fastest reliable processing strategy while preserving compatibility.
 
 ---
 
@@ -132,65 +130,67 @@ Correctness is more important than performance.
 
 ## Layered Architecture
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-The application follows a layered architecture.
+The application shall follow this architecture:
 
-```text id="jokx4j"
+```text
 User Interface
 
 ↓
 
-Application Layer
+Application
 
 ↓
 
-Source Layer
+Domain
 
 ↓
 
-Media Layer
+Source
+Media
 
 ↓
 
-System Layer
+System
 ```
 
 Dependencies always point downward.
 
-Reason
+**Rationale**
 
-This keeps responsibilities clear and prevents architectural drift.
+Layered responsibilities improve maintainability and reduce coupling.
 
 ---
 
 # ADR-007
 
-## Generic Video Model
+## Generic Media Model
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-After source resolution, every video shall be represented by the same generic data model.
+Once a video has been resolved, it shall be represented using generic media models.
 
-Example:
+Examples:
 
 * VideoMetadata
 * StreamInfo
 * ClipRequest
+* ExportRequest
 
-Core services must never distinguish between YouTube, Kick, or future sources.
+The Domain Layer must never distinguish between YouTube, Kick, or future sources.
 
-Reason
+**Rationale**
 
-The application processes media, not sources.
+The application processes media rather than individual providers.
 
 ---
 
@@ -198,17 +198,17 @@ The application processes media, not sources.
 
 ## FFmpeg Isolation
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-Only the FFmpeg wrapper may execute FFmpeg.
+Only the Media Layer may execute FFmpeg.
 
-No service may build or execute FFmpeg commands directly.
+No business service may construct or execute FFmpeg commands directly.
 
-Reason
+**Rationale**
 
 Centralized command generation improves maintainability and testing.
 
@@ -218,37 +218,37 @@ Centralized command generation improves maintainability and testing.
 
 ## FFprobe Isolation
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-Media inspection shall be performed exclusively through the FFprobe wrapper.
+Media inspection shall occur exclusively through the FFprobe wrapper.
 
-Reason
+**Rationale**
 
-Keeps metadata retrieval centralized and reusable.
+Metadata retrieval remains centralized and reusable.
 
 ---
 
 # ADR-010
 
-## yt-dlp Isolation
+## External Tool Isolation
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-The application must never call yt-dlp directly from business services.
+External tools such as yt-dlp shall remain internal implementation details of the Source Layer.
 
-Only Source Adapters may interact with yt-dlp.
+The Domain Layer must never communicate with external tools directly.
 
-Reason
+**Rationale**
 
-yt-dlp is an implementation detail of supported sources, not part of the application's business logic.
+Business logic should remain independent from infrastructure.
 
 ---
 
@@ -256,19 +256,19 @@ yt-dlp is an implementation detail of supported sources, not part of the applica
 
 ## Thin Frontend
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-The frontend is responsible only for presentation and user interaction.
+The frontend shall remain responsible only for presentation and user interaction.
 
-Business logic belongs exclusively to the Go backend.
+Business logic belongs exclusively in the backend.
 
-Reason
+**Rationale**
 
-Maintains a clear separation of concerns.
+A thin frontend is easier to maintain and keeps architectural boundaries clear.
 
 ---
 
@@ -276,19 +276,19 @@ Maintains a clear separation of concerns.
 
 ## Explicit Dependencies
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-Use constructor injection.
+Dependencies shall be injected explicitly through constructors.
 
-Avoid dependency injection frameworks.
+Dependency injection frameworks are not permitted.
 
-Reason
+**Rationale**
 
-Explicit dependencies are easier to understand and debug.
+Explicit dependencies improve readability and simplify debugging.
 
 ---
 
@@ -296,20 +296,21 @@ Explicit dependencies are easier to understand and debug.
 
 ## Domain-Oriented Packages
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-Packages are organized by business domain rather than technical type.
+Packages shall be organized by business domain instead of technical categories.
 
 Examples:
 
 * clip
-* download
-* source
+* history
 * settings
+* source
+* media
 
 Avoid generic packages such as:
 
@@ -317,27 +318,29 @@ Avoid generic packages such as:
 * managers
 * common
 
-Reason
+**Rationale**
 
-Domain-oriented organization improves discoverability and long-term maintenance.
+Domain-oriented organization scales better as the project grows.
 
 ---
 
 # ADR-014
 
-## Local Media Pipeline
+## Stateless Services
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-After download completes, all subsequent workflows operate exclusively on local media files.
+Services should remain stateless whenever possible.
 
-Reason
+Persistent state belongs only to dedicated storage components.
 
-Separating source access from media processing keeps the architecture modular.
+**Rationale**
+
+Stateless services simplify testing, concurrency, and maintenance.
 
 ---
 
@@ -345,37 +348,37 @@ Separating source access from media processing keeps the architecture modular.
 
 ## Stable Public Interfaces
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
 Public interfaces should evolve slowly.
 
-Internal implementations may change without affecting higher layers.
+Internal implementations may change freely without affecting higher layers.
 
-Reason
+**Rationale**
 
-Stable contracts reduce refactoring and improve long-term maintainability.
+Stable contracts reduce unnecessary refactoring.
 
 ---
 
 # ADR-016
 
-## Simplicity Over Flexibility
+## Simplicity Over Abstraction
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-Prefer straightforward implementations over highly configurable abstractions.
+Prefer simple, explicit implementations over highly configurable abstractions.
 
 Avoid speculative architecture.
 
-Reason
+**Rationale**
 
 The project is maintained by a solo developer with AI assistance.
 
@@ -387,19 +390,19 @@ Simplicity improves development speed and readability.
 
 ## Minimal Dependencies
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-Introduce third-party libraries only when they provide substantial value.
+Introduce third-party libraries only when they provide significant value.
 
-Avoid dependencies for simple functionality.
+Avoid dependencies for functionality that can be implemented simply within the project.
 
-Reason
+**Rationale**
 
-A smaller dependency graph is easier to maintain and update.
+A smaller dependency graph is easier to maintain.
 
 ---
 
@@ -407,55 +410,80 @@ A smaller dependency graph is easier to maintain and update.
 
 ## Testing Strategy
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-Business logic should be covered primarily by unit tests.
+Business logic should primarily be covered by unit tests.
 
-Integration tests should focus on wrappers and external tools.
+Integration tests should focus on external wrappers and infrastructure.
 
-Reason
+**Rationale**
 
-Fast, deterministic tests support frequent refactoring.
+Fast, deterministic tests encourage frequent refactoring.
 
 ---
 
 # ADR-019
 
-## Documentation as Source of Truth
+## Documentation as the Source of Truth
 
-Status
+**Status**
 
 Accepted
 
-Decision
+**Decision**
 
-The documentation inside `.contexts/` defines the project's engineering standards.
+Documentation inside `.contexts/` defines the engineering standards of the project.
 
 Implementation should follow documentation.
 
-If implementation and documentation diverge, update the documentation first before making architectural changes.
+Architectural documentation should be updated before significant architectural changes are implemented.
 
-Reason
+**Rationale**
 
-Shared documentation keeps AI and developer aligned over time.
+Shared documentation keeps developers and AI aligned over time.
+
+---
+
+# ADR-020
+
+## Desktop-First Distribution
+
+**Status**
+
+Accepted
+
+**Decision**
+
+The application shall be distributed as a standalone desktop application.
+
+It must not require:
+
+* Servers
+* Databases
+* Containers
+* Cloud infrastructure
+
+**Rationale**
+
+The project targets local desktop usage and should remain simple to install and operate.
 
 ---
 
 # ADR Maintenance
 
-When introducing a significant architectural decision:
+When introducing a new architectural decision:
 
 1. Create a new ADR.
-2. Assign the next sequential number.
-3. Mark its status.
-4. Explain the decision.
-5. Explain the reasoning.
+2. Assign the next sequential identifier.
+3. Record its status.
+4. Describe the decision.
+5. Explain the rationale.
 
-Do not rewrite existing ADRs unless the architecture intentionally changes.
+Existing ADRs should only change when the architecture intentionally evolves.
 
 ---
 
@@ -464,17 +492,19 @@ Do not rewrite existing ADRs unless the architecture intentionally changes.
 When generating code:
 
 * Follow accepted ADRs.
-* Do not introduce alternative architectures.
-* Do not replace existing patterns without approval.
 * Respect architectural boundaries.
-* Treat ADRs as permanent project rules.
+* Preserve dependency direction.
+* Avoid introducing alternative architectures.
+* Do not replace established patterns without explicit approval.
+
+When in doubt, prioritize existing ADRs over implementation convenience.
 
 ---
 
-# Decisions Philosophy
+# Decision Philosophy
 
 Architecture should evolve intentionally, not accidentally.
 
-Every major decision should be documented once and followed consistently.
+Every major decision should be documented once, understood by both developers and AI, and followed consistently throughout the project.
 
-Well-documented decisions reduce uncertainty, prevent unnecessary refactoring, and keep the project coherent as it grows.
+Well-defined decisions reduce uncertainty, prevent architectural drift, and make future development predictable.
