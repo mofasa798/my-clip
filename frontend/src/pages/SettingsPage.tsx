@@ -11,6 +11,7 @@ interface Props {
 
 export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Props) {
   const [outputDir, setOutputDir] = useState("")
+  const [clipOutputDir, setClipOutputDir] = useState("")
   const [theme, setTheme] = useState("dark")
   const [encoder, setEncoder] = useState("auto")
   const [gpuInfo, setGpuInfo] = useState<GPUInfo | null>(null)
@@ -18,6 +19,7 @@ export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Pr
 
   useEffect(() => { if (config) {
       setOutputDir(config.output_dir)
+      setClipOutputDir(config.clip_output_dir || "")
       setTheme(config.theme)
       setEncoder(config.preferred_encoder)
   } }, [config])
@@ -29,7 +31,12 @@ export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Pr
   }, [])
 
   const handleSave = () => {
-    onSave({ output_dir: outputDir, theme, preferred_encoder: encoder })
+    onSave({
+      output_dir: outputDir,
+      clip_output_dir: clipOutputDir,
+      theme,
+      preferred_encoder: encoder,
+    })
   }
 
   const depItems = deps ? [
@@ -46,7 +53,7 @@ export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Pr
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">General</h2>
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-300">Output Directory</label>
+          <label className="block text-sm font-medium text-gray-300">Output Directory (Downloads)</label>
           <div className="flex gap-2">
             <input type="text" value={outputDir} onChange={(e) => setOutputDir(e.target.value)}
               className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" />
@@ -58,6 +65,21 @@ export default function SettingsPage({ config, deps, onSave, onRefreshDeps }: Pr
               Browse
             </button>
           </div>
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-300">Clip Output Directory (Exports)</label>
+          <div className="flex gap-2">
+            <input type="text" value={clipOutputDir} onChange={(e) => setClipOutputDir(e.target.value)}
+              className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-indigo-500" />
+            <button onClick={async () => {
+              const dir = await Backend.GetClipOutputDir().catch(() => "")
+              if (dir) Backend.OpenFolder(dir).catch(() => {})
+            }}
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors shrink-0">
+              Browse
+            </button>
+          </div>
+          <p className="text-xs text-gray-600">Downloads go to the general output dir. Clips and exports go to this separate folder.</p>
         </div>
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-300">Theme</label>

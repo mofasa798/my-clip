@@ -20,9 +20,12 @@ export default function App() {
   const [config, setConfig] = useState<Config | null>(null)
   const [theme, setTheme] = useState("dark")
 
-  // Editor state
+  // Editor state — persists across tab switches
   const [editorFile, setEditorFile] = useState("")
   const [editorTitle, setEditorTitle] = useState("")
+
+  // History refresh counter — incremented after download/export
+  const [historyRevision, setHistoryRevision] = useState(0)
 
   const loadDeps = async () => {
     try {
@@ -77,6 +80,10 @@ export default function App() {
     setCurrentPage("editor")
   }
 
+  const handleExportDone = () => {
+    setHistoryRevision(v => v + 1)
+  }
+
   useEffect(() => {
     loadDeps()
     loadConfig()
@@ -89,9 +96,14 @@ export default function App() {
 
   const navItems: { id: Page; label: string }[] = [
     { id: "home", label: "Home" },
+    { id: "editor", label: "Editor" },
     { id: "history", label: "History" },
     { id: "settings", label: "Settings" },
   ]
+
+  // Hide / show pages instead of unmounting, so state persists
+  const pageClass = (page: Page) =>
+    `w-full ${currentPage === page ? "block" : "hidden"}`
 
   return (
     <div className={`min-h-screen ${bgClass}`}>
@@ -116,7 +128,7 @@ export default function App() {
               ))}
             </div>
           </div>
-          {currentPage === "editor" && (
+          {currentPage === "editor" && editorFile && (
             <button onClick={() => setCurrentPage("home")}
               className="text-sm text-indigo-400 hover:text-indigo-300">
               &larr; Home
@@ -125,28 +137,40 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Page Content */}
-      <main className={currentPage !== "home" ? "pb-12" : ""}>
+      {/* Page Content — kept mounted to preserve state */}
+      <main>
         <Suspense fallback={<PageFallback />}>
-          {currentPage === "home" && (
+          <div className={pageClass("home")}>
             <HomePage deps={deps} onRefreshDeps={handleRefreshDeps} onNavigateEditor={handleNavigateEditor} />
-          )}
-          {currentPage === "editor" && (
-            <EditorPage videoPath={editorFile} videoTitle={editorTitle} onBack={() => setCurrentPage("home")} />
-          )}
-          {currentPage === "history" && (
-            <HistoryPage onOpenFolder={handleOpenFolder} />
-          )}
-          {currentPage === "settings" && (
+          </div>
+          <div className={pageClass("editor")}>
+            {editorFile ? (
+              <EditorPage
+                videoPath={editorFile}
+                videoTitle={editorTitle}
+                onBack={() => setCurrentPage("home")}
+                onExportDone={handleExportDone}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-gray-500">
+                <p className="text-lg mb-2">No video loaded</p>
+                <p className="text-sm text-gray-600">Download a video from Home first, then open it in the Editor.</p>
+              </div>
+            )}
+          </div>
+          <div className={pageClass("history")}>
+            <HistoryPage onOpenFolder={handleOpenFolder} revision={historyRevision} />
+          </div>
+          <div className={pageClass("settings")}>
             <SettingsPage config={config} deps={deps} onSave={handleSaveConfig} onRefreshDeps={handleRefreshDeps} />
-          )}
+          </div>
         </Suspense>
       </main>
 
       {/* Status Bar */}
       <footer className={`fixed bottom-0 left-0 right-0 border-t ${footerBg} px-4 py-1.5`}>
         <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-gray-500">
-          <span>Ready</span>
+          <span>{currentPage === "editor" && editorFile ? `Editing: ${editorTitle}` : "Ready"}</span>
           <span>My Clip v0.6.0</span>
         </div>
       </footer>

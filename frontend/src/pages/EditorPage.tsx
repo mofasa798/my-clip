@@ -1,19 +1,33 @@
 import { useState, useRef, useEffect, useCallback, memo } from "react"
 import { Backend } from "../services/backend"
-import type { ExportPreset } from "../types"
+import type { ExportPreset, EncoderOption } from "../types"
 
 interface Props {
   videoPath: string
   videoTitle: string
   onBack: () => void
+  onExportDone?: () => void
 }
 
-const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: Props) {
+// Convert a local file path to a proper file:// URL for the video element.
+// Windows: C:\path\to\file.mp4 → file:///C:/path/to/file.mp4
+// Unix:    /path/to/file.mp4  → file:///path/to/file.mp4
+function toFileUrl(path: string): string {
+  if (!path) return ""
+  // Already a URL
+  if (path.startsWith("file://") || path.startsWith("http://") || path.startsWith("https://")) return path
+  // Windows path: replace backslashes and prepend file:///
+  const normalized = path.replace(/\\/g, "/")
+  return normalized.startsWith("/") ? `file://${normalized}` : `file:///${normalized}`
+}
+
+const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack, onExportDone }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [startTime, setStartTime] = useState(0)
   const [endTime, setEndTime] = useState(100)
   const [duration, setDuration] = useState(100)
   const [encoder, setEncoder] = useState("auto")
+  const [availableEncoders, setAvailableEncoders] = useState<EncoderOption[]>([])
   const [exporting, setExporting] = useState(false)
   const [exportProgress, setExportProgress] = useState(0)
   const [exportDone, setExportDone] = useState(false)
@@ -45,7 +59,8 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
       setExportDone(true)
       showNotif("✓ Export completed!")
       Backend.ShowNotification("My Clip", "Export completed successfully!").catch(() => {})
-      const dir = await Backend.GetOutputDir()
+      onExportDone?.()
+      const dir = await Backend.GetClipOutputDir()
       Backend.OpenFolder(dir).catch(() => {})
     } catch (err: any) {
       const msg = err?.message || "Export failed. Check that FFmpeg is available and the file is valid."
@@ -87,8 +102,11 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [handleKeyDown])
 
-  // Load presets on mount
-  useEffect(() => { Backend.GetPresets().then(setPresets).catch(console.error) }, [])
+  // Load presets and available encoders on mount
+  useEffect(() => {
+    Backend.GetPresets().then(setPresets).catch(console.error)
+    Backend.GetAvailableEncoders().then(setAvailableEncoders).catch(console.error)
+  }, [])
 
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
@@ -153,9 +171,10 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
       <div className="bg-black rounded-lg overflow-hidden">
         <video
           ref={videoRef}
-          src={`file://${videoPath}`}
+          src={toFileUrl(videoPath)}
           onLoadedMetadata={handleLoadedMetadata}
           className="w-full max-h-[400px]"
+          controls
         />
       </div>
 
@@ -216,10 +235,10 @@ const EditorPage = memo(function EditorPage({ videoPath, videoTitle, onBack }: P
             <label className="text-xs text-gray-500">Encoder</label>
             <select value={encoder} onChange={(e) => { setEncoder(e.target.value); setActivePreset("") }}
               className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-md text-white text-sm focus:outline-none focus:border-indigo-500">
-              <option value="auto">Auto</option>
-              {presets.filter(p => p.encoder !== "auto" && p.encoder !== "copy" && !p.name.startsWith("Fast"))
-                .map(p => <option key={p.encoder} value={p.encoder}>{p.encoder}</option>)}
-              <option value="libx264">CPU (libx264)</option>
+              <option value="auto">Auto (recommended)</option>
+              {availableEncoders.filter(e => e.available).map(e => (
+                <option key={e.value} value={e.value}>{e.name}</option>
+              ))}
             </select>
           </div>
 

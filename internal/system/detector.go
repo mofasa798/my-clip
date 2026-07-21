@@ -1,20 +1,15 @@
 package system
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-)
 
-// Known FFmpeg installation paths to search on Windows.
-var ffmpegSearchPaths = []string{
-	`C:\ffmpeg-8.0.1\ffmpeg-2026-01-26-git-fe0813d6e2-full_build\bin`,
-	`C:\ffmpeg\bin`,
-	`C:\Program Files\ffmpeg\bin`,
-	`C:\Program Files (x86)\ffmpeg\bin`,
-}
+	"my-clip/internal/shared"
+)
 
 // DepStatus represents the status of a dependency.
 type DepStatus struct {
@@ -64,7 +59,7 @@ func (d *Detector) detectBinary(name string, args ...string) DepStatus {
 	if filepath.Ext(name) == "" {
 		binaryName = name + ".exe"
 	}
-	for _, dir := range ffmpegSearchPaths {
+	for _, dir := range shared.FFmpegSearchPaths {
 		fullPath := filepath.Join(dir, binaryName)
 		if _, err := os.Stat(fullPath); err == nil {
 			return d.runBinary(fullPath, name, args...)
@@ -75,14 +70,38 @@ func (d *Detector) detectBinary(name string, args ...string) DepStatus {
 }
 
 // runBinary executes a binary and returns its status.
+// Captures both stdout and stderr because some wrappers (e.g. Chocolatey shims)
+// output version info to stderr and exit with a non-zero code.
 func (d *Detector) runBinary(fullPath, displayName string, args ...string) DepStatus {
+	// First try the normal approach (cmd.Output captures stdout)
 	cmd := exec.Command(fullPath, args...)
-	output, err := cmd.Output()
-	if err != nil {
-		return DepStatus{Name: displayName, Found: false}
+	stdout, err := cmd.Output()
+
+	var output []byte
+	if err == nil {
+		output = stdout
+	} else {
+		// On failure, try capturing stderr too — some binaries/shims
+		// write version info to stderr and exit non-zero.
+		cmd2 := exec.Command(fullPath, args...)
+		var stderrBuf bytes.Buffer
+		cmd2.Stdout = &stderrBuf
+		cmd2.Stderr = &stderrBuf
+		_ = cmd2.Run()
+		output = stderrBuf.Bytes()
 	}
 
 	version := strings.TrimSpace(string(output))
+	if version == "" {
+		// Binary exists at path but we couldn't extract a version string
+		absPath, _ := filepath.Abs(fullPath)
+		return DepStatus{
+			Name:  displayName,
+			Found: true,
+			Path:  absPath,
+		}
+	}
+
 	if idx := strings.Index(version, "\n"); idx >= 0 {
 		version = version[:idx]
 	}
@@ -132,7 +151,7 @@ func (d *Detector) findBinary(name string) (string, error) {
 	if filepath.Ext(name) == "" {
 		binaryName = name + ".exe"
 	}
-	for _, dir := range ffmpegSearchPaths {
+	for _, dir := range shared.FFmpegSearchPaths {
 		fullPath := filepath.Join(dir, binaryName)
 		if _, err := os.Stat(fullPath); err == nil {
 			return fullPath, nil

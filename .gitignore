@@ -1,4 +1,5 @@
 .task
+vendor/
 bin
 frontend/dist
 frontend/node_modules
